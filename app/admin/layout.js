@@ -7,6 +7,7 @@ const NAV = [
   ["/admin/nueva-renta", "Nueva renta"],
   ["/admin/flota", "Flota"],
   ["/admin/calendario", "Calendario"],
+  ["/admin/historial", "Historial"],
 ];
 
 export default function AdminLayout({ children }) {
