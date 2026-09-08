@@ -260,16 +260,18 @@ export default function FormularioRenta({ onExito }) {
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaEntrega}</label>
-            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
+            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} style={{ maxWidth: 180 }} />
           </div>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.horaEntrega}</label>
-            <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
+            <div style={{ maxWidth: 180 }}>
+              <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
+            </div>
             <div style={{ fontSize: 11.5, color: "#9C9484", marginTop: 4 }}>{t.horaEntregaAyuda}</div>
           </div>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaPrevista}</label>
-            <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} />
+            <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} style={{ maxWidth: 180 }} />
           </div>
 
           {motoSeleccionada && resultadoTarifa && (
