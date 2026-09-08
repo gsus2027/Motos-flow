@@ -1,0 +1,99 @@
+"use client";
+import { useEffect, useMemo, useState } from "react";
+import ContratoModal from "@/components/ContratoModal";
+
+function formatoDia(iso) {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+export default function Historial() {
+  const [rentas, setRentas] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState("");
+  const [contratoVisible, setContratoVisible] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/rentas")
+      .then((r) => r.json())
+      .then((d) => {
+        setRentas((d.rentas || []).filter((r) => r.estado === "devuelta"));
+        setCargando(false);
+      });
+  }, []);
+
+  const filtradas = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    const base = [...rentas].sort((a, b) => (b.fecha_devolucion_real || "").localeCompare(a.fecha_devolucion_real || ""));
+    if (!q) return base;
+    return base.filter(
+      (r) =>
+        r.cliente?.toLowerCase().includes(q) ||
+        r.cedula?.toLowerCase().includes(q) ||
+        r.motos?.placa?.toLowerCase().includes(q)
+    );
+  }, [rentas, busqueda]);
+
+  if (cargando) return <div style={{ color: "#6B6255" }}>Cargando…</div>;
+
+  return (
+    <div>
+      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Historial</h1>
+      <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>
+        Rentas ya devueltas — busca por cliente, cédula o placa para ver su contrato.
+      </p>
+
+      <div className="field" style={{ maxWidth: 360, marginBottom: 22 }}>
+        <input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre, cédula o placa…"
+        />
+      </div>
+
+      {filtradas.length === 0 ? (
+        <div className="card" style={{ padding: 24, color: "#6B6255", fontSize: 14.5 }}>
+          {rentas.length === 0 ? "Todavía no hay rentas devueltas." : "No se encontró ninguna renta con esa búsqueda."}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filtradas.map((r) => (
+            <div key={r.id} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+              {r.foto_carnet_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={r.foto_carnet_url} alt="Carnet" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
+              ) : (
+                <div style={{ width: 40, height: 40, borderRadius: 4, background: "#F3EEE2" }} />
+              )}
+              <div style={{ minWidth: 140 }}>
+                <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
+                <div style={{ fontSize: 12, color: "#6B6255" }}>{r.cedula}</div>
+              </div>
+              <div style={{ fontSize: 13, color: "#6B6255" }}>{r.motos?.placa} — {r.motos?.modelo}</div>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 11.5, color: "#6B6255" }}>Devuelta el</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>{formatoDia(r.fecha_devolucion_real)}</div>
+                </div>
+                {r.tarifa_total != null && (
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 11.5, color: "#6B6255" }}>Total cobrado</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>${Number(r.tarifa_total).toFixed(2)}</div>
+                  </div>
+                )}
+                <button className="btn-secondary" onClick={() => setContratoVisible({ renta: r, moto: r.motos })}>
+                  Ver contrato
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {contratoVisible && (
+        <ContratoModal renta={contratoVisible.renta} moto={contratoVisible.moto} onCerrar={() => setContratoVisible(null)} />
+      )}
+    </div>
+  );
+}
