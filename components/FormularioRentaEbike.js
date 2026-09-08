@@ -1,8 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { TEXTOS_FORM_EBIKE, TEXTOS_CONTRATO_EBIKE } from "@/lib/textos";
 import { calcularTarifaEbike } from "@/lib/pricing";
-import { comprimirImagen } from "@/lib/imagen";
 import ContratoTextoEbike from "./ContratoTextoEbike";
 import FirmaPad from "./FirmaPad";
 
@@ -28,14 +27,10 @@ export default function FormularioRentaEbike({ onExito }) {
     fechaPrevista: "",
     notas: "",
   });
-  const [foto, setFoto] = useState(null);
-  const [procesandoFoto, setProcesandoFoto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const [acepto, setAcepto] = useState(false);
   const [firma, setFirma] = useState("");
-  const fileRef = useRef(null);
-  const camaraRef = useRef(null);
 
   const t = TEXTOS_FORM_EBIKE[form.idioma === "en" ? "en" : "es"];
   const tContrato = TEXTOS_CONTRATO_EBIKE[form.idioma === "en" ? "en" : "es"];
@@ -58,27 +53,14 @@ export default function FormularioRentaEbike({ onExito }) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
-  async function manejarArchivo(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError("");
-    setProcesandoFoto(true);
-    try {
-      const dataUrl = await comprimirImagen(file);
-      setFoto(dataUrl);
-    } catch {
-      setError(t.errorFoto);
-    } finally {
-      setProcesandoFoto(false);
-    }
-  }
-
   function irAFirma() {
     setError("");
     if (!form.cliente.trim() || !form.cedula.trim()) return setError(t.errorNombreCedula);
+    if (!form.telefono.trim()) return setError(t.errorTelefono);
+    if (!form.hotel.trim()) return setError(t.errorHotel);
+    if (!form.correo.trim()) return setError(t.errorCorreo);
     if (!form.ebikeId) return setError(t.errorEbike);
     if (!form.fechaPrevista) return setError(t.errorFecha);
-    if (!foto) return setError(t.errorFoto);
     setPaso("firma");
   }
 
@@ -89,13 +71,6 @@ export default function FormularioRentaEbike({ onExito }) {
 
     setGuardando(true);
     try {
-      const subeFoto = await fetch("/api/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dataUrl: foto, tipo: "carnet" }),
-      }).then((r) => r.json());
-      if (subeFoto.error) throw new Error(subeFoto.error);
-
       const subeFirma = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,7 +93,6 @@ export default function FormularioRentaEbike({ onExito }) {
           fechaEntrega: form.fechaEntrega,
           fechaPrevista: form.fechaPrevista,
           notas: form.notas,
-          fotoCarnetUrl: subeFoto.url,
           firmaClienteUrl: subeFirma.url,
           aceptoTerminos: true,
         }),
@@ -206,19 +180,19 @@ export default function FormularioRentaEbike({ onExito }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.nombreCliente}</label>
+            <label>{t.nombreCliente} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.cliente} onChange={(e) => set("cliente", e.target.value)} placeholder={t.nombrePlaceholder} />
           </div>
           <div className="field">
-            <label>{t.cedula}</label>
+            <label>{t.cedula} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.cedula} onChange={(e) => set("cedula", e.target.value)} placeholder={t.cedulaPlaceholder} />
           </div>
           <div className="field">
-            <label>{t.telefono}</label>
+            <label>{t.telefono} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder={t.telefonoPlaceholder} />
           </div>
           <div className="field">
-            <label>{t.hotel}</label>
+            <label>{t.hotel} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.hotel} onChange={(e) => set("hotel", e.target.value)} placeholder={t.hotelPlaceholder} />
           </div>
           <div className="field">
@@ -226,7 +200,7 @@ export default function FormularioRentaEbike({ onExito }) {
             <input value={form.pais} onChange={(e) => set("pais", e.target.value)} placeholder={t.paisPlaceholder} />
           </div>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.correo}</label>
+            <label>{t.correo} <span style={{ color: "#C0392B" }}>*</span></label>
             <input type="email" value={form.correo} onChange={(e) => set("correo", e.target.value)} placeholder={t.correoPlaceholder} />
           </div>
 
@@ -244,7 +218,7 @@ export default function FormularioRentaEbike({ onExito }) {
             <label>{t.fechaEntrega}</label>
             <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
           </div>
-          <div className="field">
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaPrevista}</label>
             <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} />
           </div>
@@ -263,30 +237,6 @@ export default function FormularioRentaEbike({ onExito }) {
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.notas}</label>
             <input value={form.notas} onChange={(e) => set("notas", e.target.value)} placeholder={t.notasPlaceholder} />
-          </div>
-        </div>
-
-        <div style={{ marginTop: 20 }}>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#6B6255", marginBottom: 8 }}>{t.fotoLabel}</label>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {foto ? (
-              <img src={foto} alt="Carnet subido" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 5, border: "1px solid #E4DECB" }} />
-            ) : (
-              <div style={{ width: 84, height: 84, borderRadius: 5, background: "#F3EEE2", border: "1px dashed #C9BFA6" }} />
-            )}
-            <div>
-              <input ref={fileRef} type="file" accept="image/*" onChange={manejarArchivo} style={{ display: "none" }} />
-              <input ref={camaraRef} type="file" accept="image/*" capture="environment" onChange={manejarArchivo} style={{ display: "none" }} />
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()}>
-                  {foto ? t.cambiarFoto : t.subirFoto}
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => camaraRef.current?.click()}>
-                  📷 {t.tomarFoto}
-                </button>
-              </div>
-              {procesandoFoto && <div style={{ fontSize: 12.5, color: "#6B6255", marginTop: 6 }}>{t.procesandoImagen}</div>}
-            </div>
           </div>
         </div>
 

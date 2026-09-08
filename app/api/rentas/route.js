@@ -32,6 +32,9 @@ export async function POST(req) {
   if (!cliente?.trim() || !cedula?.trim()) {
     return NextResponse.json({ error: "El nombre y la cédula del cliente son obligatorios." }, { status: 400 });
   }
+  if (!telefono?.trim()) return NextResponse.json({ error: "El teléfono es obligatorio." }, { status: 400 });
+  if (!hotel?.trim()) return NextResponse.json({ error: "El lugar de estadía es obligatorio." }, { status: 400 });
+  if (!correo?.trim()) return NextResponse.json({ error: "El correo electrónico es obligatorio." }, { status: 400 });
   if (!motoId) return NextResponse.json({ error: "Selecciona una moto disponible." }, { status: 400 });
   if (!fechaEntrega || !horaEntrega || !fechaPrevista) {
     return NextResponse.json({ error: "Faltan la fecha/hora de entrega o la fecha de devolución." }, { status: 400 });

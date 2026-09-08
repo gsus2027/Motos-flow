@@ -5,6 +5,7 @@ import { calcularTarifa } from "@/lib/pricing";
 import { comprimirImagen } from "@/lib/imagen";
 import ContratoTexto from "./ContratoTexto";
 import FirmaPad from "./FirmaPad";
+import SelectorHora from "./SelectorHora";
 
 function hoyISO() {
   const d = new Date();
@@ -82,6 +83,9 @@ export default function FormularioRenta({ onExito }) {
   function irAFirma() {
     setError("");
     if (!form.cliente.trim() || !form.cedula.trim()) return setError(t.errorNombreCedula);
+    if (!form.telefono.trim()) return setError(t.errorTelefono);
+    if (!form.hotel.trim()) return setError(t.errorHotel);
+    if (!form.correo.trim()) return setError(t.errorCorreo);
     if (!form.motoId) return setError(t.errorMoto);
     if (!form.horaEntrega) return setError(t.errorHora);
     if (!form.fechaPrevista) return setError(t.errorFecha);
@@ -218,19 +222,19 @@ export default function FormularioRenta({ onExito }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.nombreCliente}</label>
+            <label>{t.nombreCliente} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.cliente} onChange={(e) => set("cliente", e.target.value)} placeholder={t.nombrePlaceholder} />
           </div>
           <div className="field">
-            <label>{t.cedula}</label>
+            <label>{t.cedula} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.cedula} onChange={(e) => set("cedula", e.target.value)} placeholder={t.cedulaPlaceholder} />
           </div>
           <div className="field">
-            <label>{t.telefono}</label>
+            <label>{t.telefono} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder={t.telefonoPlaceholder} />
           </div>
           <div className="field">
-            <label>{t.hotel}</label>
+            <label>{t.hotel} <span style={{ color: "#C0392B" }}>*</span></label>
             <input value={form.hotel} onChange={(e) => set("hotel", e.target.value)} placeholder={t.hotelPlaceholder} />
           </div>
           <div className="field">
@@ -238,7 +242,7 @@ export default function FormularioRenta({ onExito }) {
             <input value={form.pais} onChange={(e) => set("pais", e.target.value)} placeholder={t.paisPlaceholder} />
           </div>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.correo}</label>
+            <label>{t.correo} <span style={{ color: "#C0392B" }}>*</span></label>
             <input type="email" value={form.correo} onChange={(e) => set("correo", e.target.value)} placeholder={t.correoPlaceholder} />
           </div>
 
@@ -260,7 +264,7 @@ export default function FormularioRenta({ onExito }) {
           </div>
           <div className="field">
             <label>{t.horaEntrega}</label>
-            <input type="time" value={form.horaEntrega} onChange={(e) => set("horaEntrega", e.target.value)} />
+            <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
             <div style={{ fontSize: 11.5, color: "#9C9484", marginTop: 4 }}>{t.horaEntregaAyuda}</div>
           </div>
           <div className="field">

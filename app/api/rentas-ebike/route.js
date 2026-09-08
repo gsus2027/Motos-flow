@@ -32,11 +32,13 @@ export async function POST(req) {
   if (!cliente?.trim() || !cedula?.trim()) {
     return NextResponse.json({ error: "El nombre y la cédula del cliente son obligatorios." }, { status: 400 });
   }
+  if (!telefono?.trim()) return NextResponse.json({ error: "El teléfono es obligatorio." }, { status: 400 });
+  if (!hotel?.trim()) return NextResponse.json({ error: "El lugar de estadía es obligatorio." }, { status: 400 });
+  if (!correo?.trim()) return NextResponse.json({ error: "El correo electrónico es obligatorio." }, { status: 400 });
   if (!ebikeId) return NextResponse.json({ error: "Selecciona una ebike disponible." }, { status: 400 });
   if (!fechaEntrega || !fechaPrevista) {
     return NextResponse.json({ error: "Faltan la fecha de entrega o la fecha de devolución." }, { status: 400 });
   }
-  if (!fotoCarnetUrl) return NextResponse.json({ error: "Falta la foto del carnet." }, { status: 400 });
   if (!aceptoTerminos || !firmaClienteUrl) {
     return NextResponse.json({ error: "Falta aceptar los términos y firmar." }, { status: 400 });
   }
@@ -69,7 +71,7 @@ export async function POST(req) {
       fecha_entrega: fechaEntrega,
       fecha_prevista: fechaPrevista,
       notas: notas?.trim() || null,
-      foto_carnet_url: fotoCarnetUrl,
+      foto_carnet_url: fotoCarnetUrl || null,
       firma_cliente_url: firmaClienteUrl,
       fecha_firma: new Date().toISOString().slice(0, 10),
       acepto_terminos: true,
