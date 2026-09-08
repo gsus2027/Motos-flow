@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import ContratoModal from "@/components/ContratoModal";
+import ContratoModalEbike from "@/components/ContratoModalEbike";
 
 function formatoDia(iso) {
   if (!iso) return "—";
@@ -15,12 +16,19 @@ export default function Historial() {
   const [contratoVisible, setContratoVisible] = useState(null);
 
   useEffect(() => {
-    fetch("/api/rentas")
-      .then((r) => r.json())
-      .then((d) => {
-        setRentas((d.rentas || []).filter((r) => r.estado === "devuelta"));
-        setCargando(false);
-      });
+    Promise.all([
+      fetch("/api/rentas").then((r) => r.json()),
+      fetch("/api/rentas-ebike").then((r) => r.json()),
+    ]).then(([rm, re]) => {
+      const motos = (rm.rentas || [])
+        .filter((r) => r.estado === "devuelta")
+        .map((r) => ({ ...r, _tipo: "moto", _vehiculo: r.motos ? `${r.motos.placa} — ${r.motos.modelo}` : "—" }));
+      const ebikes = (re.rentas || [])
+        .filter((r) => r.estado === "devuelta")
+        .map((r) => ({ ...r, _tipo: "ebike", _vehiculo: r.ebikes ? `Ebike ${r.ebikes.numero}` : "—" }));
+      setRentas([...motos, ...ebikes]);
+      setCargando(false);
+    });
   }, []);
 
   const filtradas = useMemo(() => {
@@ -31,7 +39,7 @@ export default function Historial() {
       (r) =>
         r.cliente?.toLowerCase().includes(q) ||
         r.cedula?.toLowerCase().includes(q) ||
-        r.motos?.placa?.toLowerCase().includes(q)
+        r._vehiculo?.toLowerCase().includes(q)
     );
   }, [rentas, busqueda]);
 
@@ -41,14 +49,14 @@ export default function Historial() {
     <div>
       <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Historial</h1>
       <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>
-        Rentas ya devueltas — busca por cliente, cédula o placa para ver su contrato.
+        Rentas ya devueltas (motos y ebikes) — busca por cliente, cédula o vehículo para ver su contrato.
       </p>
 
       <div className="field" style={{ maxWidth: 360, marginBottom: 22 }}>
         <input
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar por nombre, cédula o placa…"
+          placeholder="Buscar por nombre, cédula o vehículo…"
         />
       </div>
 
@@ -59,7 +67,7 @@ export default function Historial() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtradas.map((r) => (
-            <div key={r.id} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div key={`${r._tipo}-${r.id}`} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
               {r.foto_carnet_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={r.foto_carnet_url} alt="Carnet" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
@@ -70,7 +78,10 @@ export default function Historial() {
                 <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
                 <div style={{ fontSize: 12, color: "#6B6255" }}>{r.cedula}</div>
               </div>
-              <div style={{ fontSize: 13, color: "#6B6255" }}>{r.motos?.placa} — {r.motos?.modelo}</div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#6B6255", background: "#F3EEE2", padding: "2px 8px", borderRadius: 3, textTransform: "uppercase" }}>
+                {r._tipo === "ebike" ? "Ebike" : "Moto"}
+              </span>
+              <div style={{ fontSize: 13, color: "#6B6255" }}>{r._vehiculo}</div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 11.5, color: "#6B6255" }}>Devuelta el</div>
@@ -82,17 +93,18 @@ export default function Historial() {
                     <div style={{ fontSize: 13.5, fontWeight: 600 }}>${Number(r.tarifa_total).toFixed(2)}</div>
                   </div>
                 )}
-                <button className="btn-secondary" onClick={() => setContratoVisible({ renta: r, moto: r.motos })}>
-                  Ver contrato
-                </button>
+                <button className="btn-secondary" onClick={() => setContratoVisible(r)}>Ver contrato</button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {contratoVisible && (
-        <ContratoModal renta={contratoVisible.renta} moto={contratoVisible.moto} onCerrar={() => setContratoVisible(null)} />
+      {contratoVisible && contratoVisible._tipo === "ebike" && (
+        <ContratoModalEbike renta={contratoVisible} ebike={contratoVisible.ebikes} onCerrar={() => setContratoVisible(null)} />
+      )}
+      {contratoVisible && contratoVisible._tipo === "moto" && (
+        <ContratoModal renta={contratoVisible} moto={contratoVisible.motos} onCerrar={() => setContratoVisible(null)} />
       )}
     </div>
   );

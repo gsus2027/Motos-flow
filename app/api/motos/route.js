@@ -9,14 +9,20 @@ function requiereStaff(req) {
 
 // GET: pública (el formulario del cliente necesita ver qué motos hay
 // disponibles), solo devuelve id/placa/modelo/tipo, nada sensible.
-export async function GET() {
+export async function GET(req) {
   const db = supabaseServer();
   const { data, error } = await db
     .from("motos")
     .select("id, placa, modelo, tipo, creado_en")
     .order("creado_en", { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ motos: data });
+
+  const soloDisponibles = new URL(req.url).searchParams.get("disponibles") === "1";
+  if (!soloDisponibles) return NextResponse.json({ motos: data });
+
+  const { data: activas } = await db.from("rentas").select("moto_id").eq("estado", "activa");
+  const ocupadas = new Set((activas || []).map((r) => r.moto_id));
+  return NextResponse.json({ motos: data.filter((m) => !ocupadas.has(m.id)) });
 }
 
 // POST: solo staff — agregar una moto nueva

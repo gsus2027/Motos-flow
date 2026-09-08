@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { TEXTOS_FORM, TEXTOS_CONTRATO } from "@/lib/textos";
-import { calcularTarifa } from "@/lib/pricing";
+import { TEXTOS_FORM_EBIKE, TEXTOS_CONTRATO_EBIKE } from "@/lib/textos";
+import { calcularTarifaEbike } from "@/lib/pricing";
 import { comprimirImagen } from "@/lib/imagen";
-import ContratoTexto from "./ContratoTexto";
+import ContratoTextoEbike from "./ContratoTextoEbike";
 import FirmaPad from "./FirmaPad";
 
 function hoyISO() {
@@ -11,9 +11,9 @@ function hoyISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default function FormularioRenta({ onExito }) {
-  const [motos, setMotos] = useState([]);
-  const [cargandoMotos, setCargandoMotos] = useState(true);
+export default function FormularioRentaEbike({ onExito }) {
+  const [ebikes, setEbikes] = useState([]);
+  const [cargandoEbikes, setCargandoEbikes] = useState(true);
   const [paso, setPaso] = useState("datos");
   const [form, setForm] = useState({
     idioma: "es",
@@ -23,9 +23,8 @@ export default function FormularioRenta({ onExito }) {
     hotel: "",
     pais: "",
     correo: "",
-    motoId: "",
+    ebikeId: "",
     fechaEntrega: hoyISO(),
-    horaEntrega: "09:00",
     fechaPrevista: "",
     notas: "",
   });
@@ -38,26 +37,21 @@ export default function FormularioRenta({ onExito }) {
   const fileRef = useRef(null);
   const camaraRef = useRef(null);
 
-  const t = TEXTOS_FORM[form.idioma === "en" ? "en" : "es"];
-  const tContrato = TEXTOS_CONTRATO[form.idioma === "en" ? "en" : "es"];
-  const motoSeleccionada = motos.find((m) => m.id === form.motoId);
-  const resultadoTarifa = form.motoId
-    ? calcularTarifa({
-        tipoMoto: motoSeleccionada?.tipo,
-        fechaEntrega: form.fechaEntrega,
-        horaEntrega: form.horaEntrega,
-        fechaPrevista: form.fechaPrevista,
-      })
+  const t = TEXTOS_FORM_EBIKE[form.idioma === "en" ? "en" : "es"];
+  const tContrato = TEXTOS_CONTRATO_EBIKE[form.idioma === "en" ? "en" : "es"];
+  const ebikeSeleccionada = ebikes.find((e) => e.id === form.ebikeId);
+  const resultadoTarifa = form.fechaPrevista
+    ? calcularTarifaEbike({ fechaEntrega: form.fechaEntrega, fechaPrevista: form.fechaPrevista })
     : null;
 
   useEffect(() => {
-    fetch("/api/motos?disponibles=1")
+    fetch("/api/ebikes?disponibles=1")
       .then((r) => r.json())
       .then((d) => {
-        setMotos(d.motos || []);
-        setCargandoMotos(false);
+        setEbikes(d.ebikes || []);
+        setCargandoEbikes(false);
       })
-      .catch(() => setCargandoMotos(false));
+      .catch(() => setCargandoEbikes(false));
   }, []);
 
   function set(campo, valor) {
@@ -82,8 +76,7 @@ export default function FormularioRenta({ onExito }) {
   function irAFirma() {
     setError("");
     if (!form.cliente.trim() || !form.cedula.trim()) return setError(t.errorNombreCedula);
-    if (!form.motoId) return setError(t.errorMoto);
-    if (!form.horaEntrega) return setError(t.errorHora);
+    if (!form.ebikeId) return setError(t.errorEbike);
     if (!form.fechaPrevista) return setError(t.errorFecha);
     if (!foto) return setError(t.errorFoto);
     setPaso("firma");
@@ -110,11 +103,11 @@ export default function FormularioRenta({ onExito }) {
       }).then((r) => r.json());
       if (subeFirma.error) throw new Error(subeFirma.error);
 
-      const res = await fetch("/api/rentas", {
+      const res = await fetch("/api/rentas-ebike", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          motoId: form.motoId,
+          ebikeId: form.ebikeId,
           idioma: form.idioma,
           cliente: form.cliente,
           cedula: form.cedula,
@@ -123,7 +116,6 @@ export default function FormularioRenta({ onExito }) {
           pais: form.pais,
           correo: form.correo,
           fechaEntrega: form.fechaEntrega,
-          horaEntrega: form.horaEntrega,
           fechaPrevista: form.fechaPrevista,
           notas: form.notas,
           fotoCarnetUrl: subeFoto.url,
@@ -141,17 +133,13 @@ export default function FormularioRenta({ onExito }) {
     }
   }
 
-  const motosLibres = motos; // /api/motos ya solo devuelve motos sin filtrar; el servidor valida disponibilidad al crear
-
   if (paso === "exito") {
     return (
       <div className="card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
         <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 20, margin: "0 0 10px" }}>{t.exitoTitulo}</h2>
         <p style={{ color: "#6B6255", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
-        <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>
-          {t.otraRenta}
-        </button>
+        <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>{t.otraRenta}</button>
       </div>
     );
   }
@@ -161,7 +149,7 @@ export default function FormularioRenta({ onExito }) {
     return (
       <div>
         <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
-          <ContratoTexto renta={rentaPreview} moto={motoSeleccionada} t={tContrato} />
+          <ContratoTextoEbike renta={rentaPreview} ebike={ebikeSeleccionada} t={tContrato} />
         </div>
 
         <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto" }}>
@@ -210,9 +198,9 @@ export default function FormularioRenta({ onExito }) {
           </div>
         </div>
 
-        {!cargandoMotos && motosLibres.length === 0 && (
+        {!cargandoEbikes && ebikes.length === 0 && (
           <div style={{ background: "#FBEACB", color: "#8A5A03", padding: 14, borderRadius: 4, marginBottom: 20, fontSize: 14 }}>
-            {t.faltanMotos}
+            {t.faltanEbikes}
           </div>
         )}
 
@@ -243,13 +231,11 @@ export default function FormularioRenta({ onExito }) {
           </div>
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.moto}</label>
-            <select value={form.motoId} onChange={(e) => set("motoId", e.target.value)}>
-              <option value="">{t.motoPlaceholder}</option>
-              {motosLibres.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.placa} — {m.modelo} ({m.tipo === "scooter" ? "Scooter" : "Honda Navi"})
-                </option>
+            <label>{t.ebike}</label>
+            <select value={form.ebikeId} onChange={(e) => set("ebikeId", e.target.value)}>
+              <option value="">{t.ebikePlaceholder}</option>
+              {ebikes.map((e) => (
+                <option key={e.id} value={e.id}>Ebike {e.numero}</option>
               ))}
             </select>
           </div>
@@ -259,16 +245,11 @@ export default function FormularioRenta({ onExito }) {
             <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
           </div>
           <div className="field">
-            <label>{t.horaEntrega}</label>
-            <input type="time" value={form.horaEntrega} onChange={(e) => set("horaEntrega", e.target.value)} />
-            <div style={{ fontSize: 11.5, color: "#9C9484", marginTop: 4 }}>{t.horaEntregaAyuda}</div>
-          </div>
-          <div className="field">
             <label>{t.fechaPrevista}</label>
             <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} />
           </div>
 
-          {motoSeleccionada && resultadoTarifa && (
+          {resultadoTarifa && (
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>{t.tarifaCalculada}</label>
               <div style={{ background: "#F3EEE2", border: "1.5px solid #D8CFBC", borderRadius: 4, padding: "10px 14px" }}>

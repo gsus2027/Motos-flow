@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Bitácora — control de motos",
+  title: "Flow Rentals — control de motos",
   description: "Sistema de renta de motocicletas",
 };
 
