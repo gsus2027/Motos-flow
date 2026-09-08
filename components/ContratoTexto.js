@@ -48,6 +48,9 @@ export default function ContratoTexto({ renta, moto, t }) {
         <Campo label={t.telefono} valor={renta.telefono} />
         <Campo label={t.hotel} valor={renta.hotel} />
       </div>
+      <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginBottom: 8 }}>
+        <Campo label={t.correo} valor={renta.correo} />
+      </div>
 
       <h2 style={{ fontSize: 15, margin: "22px 0 6px" }}>{t.s1}</h2>
       <p style={{ margin: "6px 0" }}>{t.s1txt}</p>

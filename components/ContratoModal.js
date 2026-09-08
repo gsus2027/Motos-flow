@@ -18,6 +18,7 @@ export default function ContratoModal({ renta, moto, onCerrar }) {
     cedula: renta.cedula,
     telefono: renta.telefono,
     hotel: renta.hotel,
+    correo: renta.correo,
     fechaEntrega: renta.fecha_entrega,
     horaEntrega: renta.hora_entrega,
     fechaPrevista: renta.fecha_prevista,
