@@ -10,6 +10,21 @@ function hoyISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function PasoStripEbike({ paso }) {
+  const enFirma = paso === "firma";
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div className="v2-mono" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: 6 }}>
+        {enFirma ? "PASO 2 · 2 — TÉRMINOS Y FIRMA" : "PASO 1 · 2 — DATOS Y VEHÍCULO"}
+      </div>
+      <div className="v2-step-strip">
+        <div className="dash" style={{ background: "var(--ebike)" }} />
+        <div className="dash" style={{ background: enFirma ? "var(--ebike)" : "var(--border)" }} />
+      </div>
+    </div>
+  );
+}
+
 export default function FormularioRentaEbike({ onExito }) {
   const [ebikes, setEbikes] = useState([]);
   const [cargandoEbikes, setCargandoEbikes] = useState(true);
@@ -109,11 +124,11 @@ export default function FormularioRentaEbike({ onExito }) {
 
   if (paso === "exito") {
     return (
-      <div className="card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
+      <div className="v2-card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
-        <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 20, margin: "0 0 10px" }}>{t.exitoTitulo}</h2>
-        <p style={{ color: "#6B6255", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
-        <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>{t.otraRenta}</button>
+        <h2 className="v2-brand" style={{ fontSize: 20, margin: "0 0 10px", color: "var(--text)" }}>{t.exitoTitulo}</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
+        <button type="button" className="v2-btn-secondary" onClick={() => window.location.reload()}>{t.otraRenta}</button>
       </div>
     );
   }
@@ -121,29 +136,28 @@ export default function FormularioRentaEbike({ onExito }) {
   if (paso === "firma") {
     const rentaPreview = { ...form, id: "" };
     return (
-      <div>
-        <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <PasoStripEbike paso={paso} />
+        <div className="card" style={{ padding: "34px 38px", marginBottom: 18, fontFamily: "Georgia, 'Times New Roman', serif", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
           <ContratoTextoEbike renta={rentaPreview} ebike={ebikeSeleccionada} t={tContrato} />
         </div>
 
-        <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto" }}>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, cursor: "pointer" }}>
+        <div className="v2-card" style={{ padding: 22 }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, cursor: "pointer", color: "var(--text)" }}>
             <input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.target.checked)} style={{ marginTop: 3 }} />
             <span>{t.acepto}</span>
           </label>
 
           <div style={{ marginTop: 18 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#6B6255", marginBottom: 8 }}>{t.firmarAqui}</label>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8 }}>{t.firmarAqui}</label>
             <FirmaPad onChange={setFirma} limpiarTexto={t.limpiar} />
           </div>
 
-          {error && (
-            <div style={{ marginTop: 18, background: "#F6DEDA", color: "#8E2A1C", padding: 11, borderRadius: 4, fontSize: 13.5 }}>{error}</div>
-          )}
+          {error && <div className="v2-error">{error}</div>}
 
           <div style={{ marginTop: 22, display: "flex", gap: 10 }}>
-            <button type="button" className="btn-secondary" onClick={() => setPaso("datos")}>{t.atras}</button>
-            <button type="button" className="btn-primary" onClick={confirmarFirma} disabled={guardando}>
+            <button type="button" className="v2-btn-secondary" onClick={() => setPaso("datos")}>{t.atras}</button>
+            <button type="button" className="v2-btn-primary" style={{ background: "var(--ebike)", color: "var(--ebike-ink)" }} onClick={confirmarFirma} disabled={guardando}>
               {guardando ? t.guardando : t.confirmarFirma}
             </button>
           </div>
@@ -153,9 +167,11 @@ export default function FormularioRentaEbike({ onExito }) {
   }
 
   return (
-    <div>
-      <div className="card" style={{ padding: 26, maxWidth: 640, margin: "0 auto" }}>
-        <div className="field" style={{ marginBottom: 18 }}>
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <div className="v2-card" style={{ padding: 26 }}>
+        <PasoStripEbike paso={paso} />
+
+        <div className="v2-field" style={{ marginBottom: 18 }}>
           <label>{t.idiomaLabel}</label>
           <div style={{ display: "flex", gap: 10 }}>
             {[["es", "Español"], ["en", "English"]].map(([val, label]) => (
@@ -163,8 +179,8 @@ export default function FormularioRentaEbike({ onExito }) {
                 key={val}
                 type="button"
                 onClick={() => set("idioma", val)}
-                className={form.idioma === val ? "btn-primary" : "btn-secondary"}
-                style={{ padding: "8px 18px", fontSize: 13.5 }}
+                className={form.idioma === val ? "v2-btn-primary" : "v2-btn-secondary"}
+                style={form.idioma === val ? { padding: "8px 18px", fontSize: 13.5, background: "var(--ebike)", color: "var(--ebike-ink)" } : { padding: "8px 18px", fontSize: 13.5 }}
               >
                 {label}
               </button>
@@ -173,38 +189,40 @@ export default function FormularioRentaEbike({ onExito }) {
         </div>
 
         {!cargandoEbikes && ebikes.length === 0 && (
-          <div style={{ background: "#FBEACB", color: "#8A5A03", padding: 14, borderRadius: 4, marginBottom: 20, fontSize: 14 }}>
-            {t.faltanEbikes}
-          </div>
+          <div className="v2-error" style={{ marginTop: 0 }}>{t.faltanEbikes}</div>
         )}
 
+        <div className="v2-section-label first" style={{ color: "var(--ebike)" }}>Cliente</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.nombreCliente} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
+            <label>{t.nombreCliente} <span className="v2-required">*</span></label>
             <input value={form.cliente} onChange={(e) => set("cliente", e.target.value)} placeholder={t.nombrePlaceholder} />
           </div>
-          <div className="field">
-            <label>{t.cedula} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field">
+            <label>{t.cedula} <span className="v2-required">*</span></label>
             <input value={form.cedula} onChange={(e) => set("cedula", e.target.value)} placeholder={t.cedulaPlaceholder} />
           </div>
-          <div className="field">
-            <label>{t.telefono} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field">
+            <label>{t.telefono} <span className="v2-required">*</span></label>
             <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder={t.telefonoPlaceholder} />
           </div>
-          <div className="field">
-            <label>{t.hotel} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field">
+            <label>{t.hotel} <span className="v2-required">*</span></label>
             <input value={form.hotel} onChange={(e) => set("hotel", e.target.value)} placeholder={t.hotelPlaceholder} />
           </div>
-          <div className="field">
+          <div className="v2-field">
             <label>{t.pais}</label>
             <input value={form.pais} onChange={(e) => set("pais", e.target.value)} placeholder={t.paisPlaceholder} />
           </div>
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.correo} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
+            <label>{t.correo} <span className="v2-required">*</span></label>
             <input type="email" value={form.correo} onChange={(e) => set("correo", e.target.value)} placeholder={t.correoPlaceholder} />
           </div>
+        </div>
 
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
+        <div className="v2-section-label" style={{ color: "var(--ebike)" }}>Vehículo</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <div className="v2-field">
             <label>{t.ebike}</label>
             <select value={form.ebikeId} onChange={(e) => set("ebikeId", e.target.value)}>
               <option value="">{t.ebikePlaceholder}</option>
@@ -213,39 +231,49 @@ export default function FormularioRentaEbike({ onExito }) {
               ))}
             </select>
           </div>
+          {ebikeSeleccionada && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Unidad</span>
+              <span className="v2-plate" style={{ borderColor: "var(--ebike)", color: "var(--ebike)" }}>Ebike {ebikeSeleccionada.numero}</span>
+            </div>
+          )}
+        </div>
 
-          <div className="field">
+        <div className="v2-section-label" style={{ color: "var(--ebike)" }}>Entrega y devolución</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="v2-field">
             <label>{t.fechaEntrega}</label>
             <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
           </div>
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
+          <div className="v2-field">
             <label>{t.fechaPrevista}</label>
             <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} />
           </div>
 
           {resultadoTarifa && (
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
               <label>{t.tarifaCalculada}</label>
-              <div style={{ background: "#F3EEE2", border: "1.5px solid #D8CFBC", borderRadius: 4, padding: "10px 14px" }}>
-                <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 20 }}>
+              <div style={{ background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8, padding: "10px 14px" }}>
+                <div className="v2-brand" style={{ fontSize: 20, color: "var(--ebike)" }}>
                   ${resultadoTarifa.total.toFixed(2)} {tContrato.usd}
                 </div>
               </div>
             </div>
           )}
+        </div>
 
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
+        <div className="v2-section-label" style={{ color: "var(--ebike)" }}>Detalles</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <div className="v2-field">
             <label>{t.notas}</label>
             <input value={form.notas} onChange={(e) => set("notas", e.target.value)} placeholder={t.notasPlaceholder} />
           </div>
         </div>
 
-        {error && (
-          <div style={{ marginTop: 18, background: "#F6DEDA", color: "#8E2A1C", padding: 11, borderRadius: 4, fontSize: 13.5 }}>{error}</div>
-        )}
+        {error && <div className="v2-error">{error}</div>}
 
         <div style={{ marginTop: 22 }}>
-          <button type="button" onClick={irAFirma} className="btn-primary">{t.continuar}</button>
+          <button type="button" onClick={irAFirma} className="v2-btn-primary" style={{ width: "100%", background: "var(--ebike)", color: "var(--ebike-ink)" }}>{t.continuar} →</button>
         </div>
       </div>
     </div>

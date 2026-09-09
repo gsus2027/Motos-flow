@@ -47,40 +47,38 @@ export default function FlotaEbikes() {
     cargar();
   }
 
-  if (cargando) return <div style={{ color: "#6B6255" }}>Cargando…</div>;
+  if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Flota de Ebikes</h1>
-      <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>Agrega y administra las bicicletas eléctricas disponibles ($15/día c/u).</p>
+      <h1 className="v2-panel-h">Flota de Ebikes</h1>
+      <p className="v2-panel-sub">Agrega y administra las bicicletas eléctricas disponibles ($15/día c/u).</p>
 
-      <div className="card" style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 26 }}>
-        <div className="field" style={{ width: 220 }}>
+      <div className="v2-card" style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 26 }}>
+        <div className="v2-field" style={{ width: 220 }}>
           <label>Número de la ebike</label>
           <input value={numero} onChange={(e) => setNumero(e.target.value)} onKeyDown={(e) => e.key === "Enter" && agregar()} placeholder="E-01" />
         </div>
-        <button type="button" onClick={agregar} className="btn-primary">Agregar ebike</button>
-        {error && <div style={{ width: "100%", color: "#C0392B", fontSize: 13.5 }}>{error}</div>}
-        {ok && <div style={{ width: "100%", color: "#245939", fontSize: 13.5 }}>{ok}</div>}
+        <button type="button" onClick={agregar} className="v2-btn-primary" style={{ background: "var(--ebike)", color: "var(--ebike-ink)" }}>Agregar ebike</button>
+        {error && <div style={{ width: "100%", color: "var(--required)", fontSize: 13.5 }}>{error}</div>}
+        {ok && <div style={{ width: "100%", color: "var(--ebike)", fontSize: 13.5 }}>{ok}</div>}
       </div>
 
       {ebikes.length === 0 ? (
-        <div className="card" style={{ padding: 24, color: "#6B6255", fontSize: 14.5 }}>Aún no hay ebikes registradas.</div>
+        <div className="v2-card" style={{ padding: 24, color: "var(--text-muted)", fontSize: 14.5 }}>Aún no hay ebikes registradas.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {ebikes.map((e) => {
             const ocupada = idsOcupadas.has(e.id);
             return (
-              <div key={e.id} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #22201C", borderRadius: 4, padding: "3px 9px", background: "#fff" }}>
-                  Ebike {e.numero}
-                </span>
+              <div key={e.id} className="v2-row">
+                <span className="v2-plate" style={{ borderColor: "var(--ebike)", color: "var(--ebike)" }}>Ebike {e.numero}</span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#245939", fontWeight: 600 }}>
+                  <span className={"v2-avail " + (ocupada ? "busy" : "free")}>
                     {ocupada ? "alquilada" : "disponible"}
                   </span>
                   <button
-                    className="btn-secondary btn-danger"
+                    className="v2-btn-secondary"
                     disabled={ocupada}
                     onClick={() => eliminar(e.id)}
                     style={{ opacity: ocupada ? 0.4 : 1, cursor: ocupada ? "not-allowed" : "pointer" }}

@@ -25,34 +25,25 @@ function estadoRenta(r) {
   if (dif <= 1) return "por vencer";
   return "activa";
 }
-const ESTILOS = {
-  vencida: { bg: "#F6DEDA", fg: "#8E2A1C", dot: "#C0392B" },
-  "por vencer": { bg: "#FBEACB", fg: "#8A5A03", dot: "#F0A202" },
-  activa: { bg: "#DCEAE1", fg: "#245939", dot: "#3F7D58" },
-};
+const CLASE_ESTADO = { vencida: "vencida", "por vencer": "porvencer", activa: "activa", devuelta: "devuelta" };
 function Badge({ estado }) {
-  const s = ESTILOS[estado] || ESTILOS.activa;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: s.bg, color: s.fg, padding: "3px 10px", borderRadius: 3, fontSize: 12.5, fontWeight: 600 }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot }} />
+    <span className={"v2-status " + (CLASE_ESTADO[estado] || "activa")}>
+      <span className="d" />
       {estado}
     </span>
   );
 }
-function Stat({ label, value, color }) {
+function Stat({ label, value, tono }) {
   return (
-    <div className="card" style={{ padding: "16px 22px", minWidth: 140 }}>
-      <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 30, fontWeight: 600, color: color || "#22201C" }}>{value}</div>
-      <div style={{ fontSize: 13, color: "#6B6255", marginTop: 2 }}>{label}</div>
+    <div className="v2-stat">
+      <div className={"n" + (tono ? " " + tono : "")}>{value}</div>
+      <div className="l">{label}</div>
     </div>
   );
 }
 function EtiquetaTipo({ tipo }) {
-  return (
-    <span style={{ fontSize: 11, fontWeight: 700, color: "#6B6255", background: "#F3EEE2", padding: "2px 8px", borderRadius: 3, textTransform: "uppercase" }}>
-      {tipo === "ebike" ? "Ebike" : "Moto"}
-    </span>
-  );
+  return <span className="v2-tag">{tipo === "ebike" ? "Ebike" : "Moto"}</span>;
 }
 
 export default function Panel() {
@@ -86,7 +77,7 @@ export default function Panel() {
     cargar();
   }
 
-  if (cargando) return <div style={{ color: "#6B6255" }}>Cargando…</div>;
+  if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   const rentasActivas = rentas.filter((r) => r.estado !== "devuelta").sort((a, b) => a.fecha_prevista.localeCompare(b.fecha_prevista));
   const totalVehiculos = motos.length + ebikes.length;
@@ -95,42 +86,42 @@ export default function Panel() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Panel</h1>
-      <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>Estado actual de la flota (motos + ebikes) y las rentas en curso.</p>
+      <h1 className="v2-panel-h">Panel</h1>
+      <p className="v2-panel-sub">Estado actual de la flota (motos + ebikes) y las rentas en curso.</p>
 
-      <div style={{ display: "flex", gap: 14, marginBottom: 30, flexWrap: "wrap" }}>
+      <div className="v2-stat-row">
         <Stat label="Vehículos en flota" value={totalVehiculos} />
-        <Stat label="Disponibles" value={Math.max(disponibles, 0)} color="#3F7D58" />
-        <Stat label="Rentados" value={rentasActivas.length} color="#8A5A03" />
-        <Stat label="Vencidos" value={vencidas} color="#C0392B" />
+        <Stat label="Disponibles" value={Math.max(disponibles, 0)} tono="ok" />
+        <Stat label="Rentados" value={rentasActivas.length} tono="warn" />
+        <Stat label="Vencidos" value={vencidas} tono="bad" />
       </div>
 
-      <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 17, margin: "0 0 12px" }}>Rentas en curso</h2>
+      <h2 className="v2-sec-h">Rentas en curso</h2>
       {rentasActivas.length === 0 ? (
-        <div className="card" style={{ padding: 24, color: "#6B6255", fontSize: 14.5 }}>
+        <div className="v2-card" style={{ padding: 24, color: "var(--text-muted)", fontSize: 14.5 }}>
           No hay vehículos rentados en este momento. Ve a "Nueva renta" para registrar una.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {rentasActivas.map((r) => (
-            <div key={`${r._tipo}-${r.id}`} className="card" style={{ padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 4 }} />
+            <div key={`${r._tipo}-${r.id}`} className="v2-row">
+              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 6 }} />
               <div style={{ minWidth: 140 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{r.cliente}</div>
-                <div style={{ fontSize: 12.5, color: "#6B6255" }}>{r.cedula}</div>
+                <div style={{ fontWeight: 600, fontSize: 15, color: "var(--text)" }}>{r.cliente}</div>
+                <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
               </div>
               <EtiquetaTipo tipo={r._tipo} />
-              <div style={{ fontSize: 13.5, color: "#6B6255" }}>{r._vehiculo}</div>
+              <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>{r._vehiculo}</div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 12, color: "#6B6255" }}>Devuelve</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devuelve</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{formatoDia(r.fecha_prevista)}</div>
                 </div>
                 <Badge estado={estadoRenta(r)} />
-                <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
+                <button className="v2-btn-secondary" onClick={() => setContratoVisible(r)}>
                   Contrato ({r.idioma === "en" ? "EN" : "ES"})
                 </button>
-                <button className="btn-secondary" onClick={() => marcarDevuelta(r)}>Marcar devuelta</button>
+                <button className="v2-btn-secondary" onClick={() => marcarDevuelta(r)}>Marcar devuelta</button>
               </div>
             </div>
           ))}

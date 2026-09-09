@@ -50,14 +50,14 @@ export default function EntrarPanel() {
   }
 
   if (configurado === null) {
-    return <div style={{ padding: 40, color: "#6B6255" }}>Cargando…</div>;
+    return <div style={{ padding: 40, color: "var(--text-muted)" }}>Cargando…</div>;
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#1C1D1F", padding: 20 }}>
-      <div className="card" style={{ maxWidth: 380, width: "100%", padding: 30 }}>
-        <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 20, marginBottom: 4, color: "#22201C" }}>FLOW RENTALS</div>
-        <div style={{ fontSize: 13, color: "#6B6255", marginBottom: 20 }}>
+    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div className="v2-card" style={{ maxWidth: 380, width: "100%", padding: 30 }}>
+        <div className="v2-brand" style={{ fontSize: 20, marginBottom: 4, color: "var(--text)" }}>FLOW RENTALS</div>
+        <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
           {configurado
             ? "Ingresa el código de acceso del equipo para entrar al panel."
             : "Primera vez: crea un código de acceso para tu equipo. Solo quien lo tenga podrá ver el panel interno."}
@@ -65,30 +65,30 @@ export default function EntrarPanel() {
 
         {configurado ? (
           <>
-            <div className="field" style={{ marginBottom: 16 }}>
+            <div className="v2-field" style={{ marginBottom: 16 }}>
               <label>Código de acceso</label>
               <input type="password" autoFocus value={v1} onChange={(e) => setV1(e.target.value)} onKeyDown={(e) => e.key === "Enter" && entrar()} />
             </div>
-            <button type="button" className="btn-primary" onClick={entrar} disabled={enviando} style={{ width: "100%" }}>
+            <button type="button" className="v2-btn-primary" onClick={entrar} disabled={enviando} style={{ width: "100%" }}>
               {enviando ? "Entrando…" : "Entrar"}
             </button>
           </>
         ) : (
           <>
-            <div className="field" style={{ marginBottom: 12 }}>
+            <div className="v2-field" style={{ marginBottom: 12 }}>
               <label>Nuevo código (mín. 4 caracteres)</label>
               <input type="password" value={v1} onChange={(e) => setV1(e.target.value)} />
             </div>
-            <div className="field" style={{ marginBottom: 16 }}>
+            <div className="v2-field" style={{ marginBottom: 16 }}>
               <label>Repite el código</label>
               <input type="password" value={v2} onChange={(e) => setV2(e.target.value)} onKeyDown={(e) => e.key === "Enter" && crear()} />
             </div>
-            <button type="button" className="btn-primary" onClick={crear} disabled={enviando} style={{ width: "100%" }}>
+            <button type="button" className="v2-btn-primary" onClick={crear} disabled={enviando} style={{ width: "100%" }}>
               {enviando ? "Guardando…" : "Guardar código y entrar"}
             </button>
           </>
         )}
-        {error && <div style={{ marginTop: 12, color: "#C0392B", fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ marginTop: 12, color: "var(--required)", fontSize: 13 }}>{error}</div>}
       </div>
     </div>
   );

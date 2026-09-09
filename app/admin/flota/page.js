@@ -49,55 +49,51 @@ export default function Flota() {
     cargar();
   }
 
-  if (cargando) return <div style={{ color: "#6B6255" }}>Cargando…</div>;
+  if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Flota</h1>
-      <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>Agrega y administra las motos disponibles para renta.</p>
+      <h1 className="v2-panel-h">Flota</h1>
+      <p className="v2-panel-sub">Agrega y administra las motos disponibles para renta.</p>
 
-      <div className="card" style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 26 }}>
-        <div className="field" style={{ width: 160 }}>
+      <div className="v2-card" style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 26 }}>
+        <div className="v2-field" style={{ width: 160 }}>
           <label>Placa</label>
           <input value={placa} onChange={(e) => setPlaca(e.target.value)} onKeyDown={(e) => e.key === "Enter" && agregar()} placeholder="AB-1234" />
         </div>
-        <div className="field" style={{ flex: 1, minWidth: 180 }}>
+        <div className="v2-field" style={{ flex: 1, minWidth: 180 }}>
           <label>Marca y modelo</label>
           <input value={modelo} onChange={(e) => setModelo(e.target.value)} onKeyDown={(e) => e.key === "Enter" && agregar()} placeholder="Yamaha XTZ 150" />
         </div>
-        <div className="field" style={{ width: 190 }}>
+        <div className="v2-field" style={{ width: 190 }}>
           <label>Tipo (define la tarifa)</label>
           <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
             <option value="navi">Honda Navi — $25/día</option>
             <option value="scooter">Scooter — $30/día</option>
           </select>
         </div>
-        <button type="button" onClick={agregar} className="btn-primary">Agregar moto</button>
-        {error && <div style={{ width: "100%", color: "#C0392B", fontSize: 13.5 }}>{error}</div>}
-        {ok && <div style={{ width: "100%", color: "#245939", fontSize: 13.5 }}>{ok}</div>}
+        <button type="button" onClick={agregar} className="v2-btn-primary">Agregar moto</button>
+        {error && <div style={{ width: "100%", color: "var(--required)", fontSize: 13.5 }}>{error}</div>}
+        {ok && <div style={{ width: "100%", color: "var(--ebike)", fontSize: 13.5 }}>{ok}</div>}
       </div>
 
       {motos.length === 0 ? (
-        <div className="card" style={{ padding: 24, color: "#6B6255", fontSize: 14.5 }}>Aún no hay motos registradas.</div>
+        <div className="v2-card" style={{ padding: 24, color: "var(--text-muted)", fontSize: 14.5 }}>Aún no hay motos registradas.</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {motos.map((m) => {
             const ocupada = idsOcupadas.has(m.id);
             return (
-              <div key={m.id} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #22201C", borderRadius: 4, padding: "3px 9px", background: "#fff" }}>
-                  {m.placa}
-                </span>
-                <div style={{ fontSize: 14.5 }}>{m.modelo}</div>
-                <span style={{ fontSize: 12, color: "#6B6255", background: "#F3EEE2", padding: "3px 9px", borderRadius: 3 }}>
-                  {m.tipo === "scooter" ? "Scooter" : "Honda Navi"}
-                </span>
+              <div key={m.id} className="v2-row">
+                <span className="v2-plate">{m.placa}</span>
+                <div className="v2-fleet-model">{m.modelo}</div>
+                <span className="v2-tag">{m.tipo === "scooter" ? "Scooter" : "Honda Navi"}</span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#245939", fontWeight: 600 }}>
+                  <span className={"v2-avail " + (ocupada ? "busy" : "free")}>
                     {ocupada ? "alquilada" : "disponible"}
                   </span>
                   <button
-                    className="btn-secondary btn-danger"
+                    className="v2-btn-secondary"
                     disabled={ocupada}
                     onClick={() => eliminar(m.id)}
                     style={{ opacity: ocupada ? 0.4 : 1, cursor: ocupada ? "not-allowed" : "pointer" }}

@@ -12,6 +12,21 @@ function hoyISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function PasoStrip({ paso }) {
+  const enFirma = paso === "firma";
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div className="v2-mono" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: 6 }}>
+        {enFirma ? "PASO 2 · 2 — TÉRMINOS Y FIRMA" : "PASO 1 · 2 — DATOS Y VEHÍCULO"}
+      </div>
+      <div className="v2-step-strip">
+        <div className="dash on" />
+        <div className={"dash" + (enFirma ? " on" : "")} />
+      </div>
+    </div>
+  );
+}
+
 export default function FormularioRenta({ onExito }) {
   const [motos, setMotos] = useState([]);
   const [cargandoMotos, setCargandoMotos] = useState(true);
@@ -149,11 +164,11 @@ export default function FormularioRenta({ onExito }) {
 
   if (paso === "exito") {
     return (
-      <div className="card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
+      <div className="v2-card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
-        <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 20, margin: "0 0 10px" }}>{t.exitoTitulo}</h2>
-        <p style={{ color: "#6B6255", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
-        <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>
+        <h2 className="v2-brand" style={{ fontSize: 20, margin: "0 0 10px", color: "var(--text)" }}>{t.exitoTitulo}</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
+        <button type="button" className="v2-btn-secondary" onClick={() => window.location.reload()}>
           {t.otraRenta}
         </button>
       </div>
@@ -163,29 +178,28 @@ export default function FormularioRenta({ onExito }) {
   if (paso === "firma") {
     const rentaPreview = { ...form, id: "" };
     return (
-      <div>
-        <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <PasoStrip paso={paso} />
+        <div className="card" style={{ padding: "34px 38px", marginBottom: 18, fontFamily: "Georgia, 'Times New Roman', serif", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
           <ContratoTexto renta={rentaPreview} moto={motoSeleccionada} t={tContrato} />
         </div>
 
-        <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto" }}>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, cursor: "pointer" }}>
+        <div className="v2-card" style={{ padding: 22 }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, cursor: "pointer", color: "var(--text)" }}>
             <input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.target.checked)} style={{ marginTop: 3 }} />
             <span>{t.acepto}</span>
           </label>
 
           <div style={{ marginTop: 18 }}>
-            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#6B6255", marginBottom: 8 }}>{t.firmarAqui}</label>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8 }}>{t.firmarAqui}</label>
             <FirmaPad onChange={setFirma} limpiarTexto={t.limpiar} />
           </div>
 
-          {error && (
-            <div style={{ marginTop: 18, background: "#F6DEDA", color: "#8E2A1C", padding: 11, borderRadius: 4, fontSize: 13.5 }}>{error}</div>
-          )}
+          {error && <div className="v2-error">{error}</div>}
 
           <div style={{ marginTop: 22, display: "flex", gap: 10 }}>
-            <button type="button" className="btn-secondary" onClick={() => setPaso("datos")}>{t.atras}</button>
-            <button type="button" className="btn-primary" onClick={confirmarFirma} disabled={guardando}>
+            <button type="button" className="v2-btn-secondary" onClick={() => setPaso("datos")}>{t.atras}</button>
+            <button type="button" className="v2-btn-primary" onClick={confirmarFirma} disabled={guardando}>
               {guardando ? t.guardando : t.confirmarFirma}
             </button>
           </div>
@@ -195,9 +209,11 @@ export default function FormularioRenta({ onExito }) {
   }
 
   return (
-    <div>
-      <div className="card" style={{ padding: 26, maxWidth: 640, margin: "0 auto" }}>
-        <div className="field" style={{ marginBottom: 18 }}>
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <div className="v2-card" style={{ padding: 26 }}>
+        <PasoStrip paso={paso} />
+
+        <div className="v2-field" style={{ marginBottom: 18 }}>
           <label>{t.idiomaLabel}</label>
           <div style={{ display: "flex", gap: 10 }}>
             {[["es", "Español"], ["en", "English"]].map(([val, label]) => (
@@ -205,7 +221,7 @@ export default function FormularioRenta({ onExito }) {
                 key={val}
                 type="button"
                 onClick={() => set("idioma", val)}
-                className={form.idioma === val ? "btn-primary" : "btn-secondary"}
+                className={form.idioma === val ? "v2-btn-primary" : "v2-btn-secondary"}
                 style={{ padding: "8px 18px", fontSize: 13.5 }}
               >
                 {label}
@@ -215,38 +231,40 @@ export default function FormularioRenta({ onExito }) {
         </div>
 
         {!cargandoMotos && motosLibres.length === 0 && (
-          <div style={{ background: "#FBEACB", color: "#8A5A03", padding: 14, borderRadius: 4, marginBottom: 20, fontSize: 14 }}>
-            {t.faltanMotos}
-          </div>
+          <div className="v2-error" style={{ marginTop: 0 }}>{t.faltanMotos}</div>
         )}
 
+        <div className="v2-section-label first">Cliente</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.nombreCliente} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
+            <label>{t.nombreCliente} <span className="v2-required">*</span></label>
             <input value={form.cliente} onChange={(e) => set("cliente", e.target.value)} placeholder={t.nombrePlaceholder} />
           </div>
-          <div className="field">
-            <label>{t.cedula} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field">
+            <label>{t.cedula} <span className="v2-required">*</span></label>
             <input value={form.cedula} onChange={(e) => set("cedula", e.target.value)} placeholder={t.cedulaPlaceholder} />
           </div>
-          <div className="field">
-            <label>{t.telefono} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field">
+            <label>{t.telefono} <span className="v2-required">*</span></label>
             <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder={t.telefonoPlaceholder} />
           </div>
-          <div className="field">
-            <label>{t.hotel} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field">
+            <label>{t.hotel} <span className="v2-required">*</span></label>
             <input value={form.hotel} onChange={(e) => set("hotel", e.target.value)} placeholder={t.hotelPlaceholder} />
           </div>
-          <div className="field">
+          <div className="v2-field">
             <label>{t.pais}</label>
             <input value={form.pais} onChange={(e) => set("pais", e.target.value)} placeholder={t.paisPlaceholder} />
           </div>
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.correo} <span style={{ color: "#C0392B" }}>*</span></label>
+          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
+            <label>{t.correo} <span className="v2-required">*</span></label>
             <input type="email" value={form.correo} onChange={(e) => set("correo", e.target.value)} placeholder={t.correoPlaceholder} />
           </div>
+        </div>
 
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
+        <div className="v2-section-label">Vehículo</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <div className="v2-field">
             <label>{t.moto}</label>
             <select value={form.motoId} onChange={(e) => set("motoId", e.target.value)}>
               <option value="">{t.motoPlaceholder}</option>
@@ -257,70 +275,81 @@ export default function FormularioRenta({ onExito }) {
               ))}
             </select>
           </div>
-
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.fechaEntrega}</label>
-            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} style={{ maxWidth: 180 }} />
-          </div>
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.horaEntrega}</label>
-            <div style={{ maxWidth: 180 }}>
-              <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
+          {motoSeleccionada && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Unidad</span>
+              <span className="v2-plate">{motoSeleccionada.placa}</span>
+              <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+                {motoSeleccionada.modelo} · {motoSeleccionada.tipo === "scooter" ? "Scooter" : "Honda Navi"}
+              </span>
             </div>
-            <div style={{ fontSize: 11.5, color: "#9C9484", marginTop: 4 }}>{t.horaEntregaAyuda}</div>
+          )}
+        </div>
+
+        <div className="v2-section-label">Entrega y devolución</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="v2-field">
+            <label>{t.fechaEntrega}</label>
+            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
           </div>
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
+          <div className="v2-field">
+            <label>{t.horaEntrega}</label>
+            <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
+            <div className="v2-helper">{t.horaEntregaAyuda}</div>
+          </div>
+          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaPrevista}</label>
-            <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} style={{ maxWidth: 180 }} />
+            <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} style={{ maxWidth: 220 }} />
           </div>
 
           {motoSeleccionada && resultadoTarifa && (
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
               <label>{t.tarifaCalculada}</label>
-              <div style={{ background: "#F3EEE2", border: "1.5px solid #D8CFBC", borderRadius: 4, padding: "10px 14px" }}>
-                <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 20 }}>
+              <div style={{ background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8, padding: "10px 14px" }}>
+                <div className="v2-brand" style={{ fontSize: 20, color: "var(--accent)" }}>
                   ${resultadoTarifa.total.toFixed(2)} {tContrato.usd}
                 </div>
               </div>
             </div>
           )}
+        </div>
 
-          <div className="field" style={{ gridColumn: "1 / -1" }}>
+        <div className="v2-section-label">Detalles</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+          <div className="v2-field">
             <label>{t.notas}</label>
             <input value={form.notas} onChange={(e) => set("notas", e.target.value)} placeholder={t.notasPlaceholder} />
           </div>
-        </div>
 
-        <div style={{ marginTop: 20 }}>
-          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#6B6255", marginBottom: 8 }}>{t.fotoLabel}</label>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {foto ? (
-              <img src={foto} alt="Carnet subido" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 5, border: "1px solid #E4DECB" }} />
-            ) : (
-              <div style={{ width: 84, height: 84, borderRadius: 5, background: "#F3EEE2", border: "1px dashed #C9BFA6" }} />
-            )}
-            <div>
-              <input ref={fileRef} type="file" accept="image/*" onChange={manejarArchivo} style={{ display: "none" }} />
-              <input ref={camaraRef} type="file" accept="image/*" capture="environment" onChange={manejarArchivo} style={{ display: "none" }} />
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()}>
-                  {foto ? t.cambiarFoto : t.subirFoto}
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => camaraRef.current?.click()}>
-                  📷 {t.tomarFoto}
-                </button>
+          <div>
+            <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8 }}>{t.fotoLabel}</label>
+            <div className="v2-upload">
+              {foto ? (
+                <img src={foto} alt="Carnet subido" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: 8, background: "var(--surface-2)", border: "1px dashed var(--border)", flexShrink: 0 }} />
+              )}
+              <div>
+                <input ref={fileRef} type="file" accept="image/*" onChange={manejarArchivo} style={{ display: "none" }} />
+                <input ref={camaraRef} type="file" accept="image/*" capture="environment" onChange={manejarArchivo} style={{ display: "none" }} />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" className="v2-btn-secondary" onClick={() => fileRef.current?.click()}>
+                    {foto ? t.cambiarFoto : t.subirFoto}
+                  </button>
+                  <button type="button" className="v2-btn-secondary" onClick={() => camaraRef.current?.click()}>
+                    📷 {t.tomarFoto}
+                  </button>
+                </div>
+                {procesandoFoto && <div className="v2-helper">{t.procesandoImagen}</div>}
               </div>
-              {procesandoFoto && <div style={{ fontSize: 12.5, color: "#6B6255", marginTop: 6 }}>{t.procesandoImagen}</div>}
             </div>
           </div>
         </div>
 
-        {error && (
-          <div style={{ marginTop: 18, background: "#F6DEDA", color: "#8E2A1C", padding: 11, borderRadius: 4, fontSize: 13.5 }}>{error}</div>
-        )}
+        {error && <div className="v2-error">{error}</div>}
 
         <div style={{ marginTop: 22 }}>
-          <button type="button" onClick={irAFirma} className="btn-primary">{t.continuar}</button>
+          <button type="button" onClick={irAFirma} className="v2-btn-primary" style={{ width: "100%" }}>{t.continuar} →</button>
         </div>
       </div>
     </div>

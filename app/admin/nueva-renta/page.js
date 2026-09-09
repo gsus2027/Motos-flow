@@ -6,8 +6,8 @@ export default function NuevaRentaStaff() {
   const router = useRouter();
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Nueva renta</h1>
-      <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>
+      <h1 className="v2-panel-h">Nueva renta</h1>
+      <p className="v2-panel-sub">
         Regístrala tú mismo con el cliente presente, o compárteles el link{" "}
         <code>/rentar</code> para que la llenen desde su propio celular.
       </p>

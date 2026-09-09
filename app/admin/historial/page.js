@@ -44,16 +44,16 @@ export default function Historial() {
     );
   }, [rentas, busqueda]);
 
-  if (cargando) return <div style={{ color: "#6B6255" }}>Cargando…</div>;
+  if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Historial</h1>
-      <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>
+      <h1 className="v2-panel-h">Historial</h1>
+      <p className="v2-panel-sub">
         Rentas ya devueltas (motos y ebikes) — busca por cliente, cédula o vehículo para ver su contrato.
       </p>
 
-      <div className="field" style={{ maxWidth: 360, marginBottom: 22 }}>
+      <div className="v2-field" style={{ maxWidth: 360, marginBottom: 22 }}>
         <input
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
@@ -62,34 +62,32 @@ export default function Historial() {
       </div>
 
       {filtradas.length === 0 ? (
-        <div className="card" style={{ padding: 24, color: "#6B6255", fontSize: 14.5 }}>
+        <div className="v2-card" style={{ padding: 24, color: "var(--text-muted)", fontSize: 14.5 }}>
           {rentas.length === 0 ? "Todavía no hay rentas devueltas." : "No se encontró ninguna renta con esa búsqueda."}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtradas.map((r) => (
-            <div key={`${r._tipo}-${r.id}`} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
+            <div key={`${r._tipo}-${r.id}`} className="v2-row">
+              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }} />
               <div style={{ minWidth: 140 }}>
-                <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
-                <div style={{ fontSize: 12, color: "#6B6255" }}>{r.cedula}</div>
+                <div style={{ fontWeight: 600, fontSize: 14.5, color: "var(--text)" }}>{r.cliente}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{r.cedula}</div>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#6B6255", background: "#F3EEE2", padding: "2px 8px", borderRadius: 3, textTransform: "uppercase" }}>
-                {r._tipo === "ebike" ? "Ebike" : "Moto"}
-              </span>
-              <div style={{ fontSize: 13, color: "#6B6255" }}>{r._vehiculo}</div>
+              <span className="v2-tag">{r._tipo === "ebike" ? "Ebike" : "Moto"}</span>
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{r._vehiculo}</div>
               <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 11.5, color: "#6B6255" }}>Devuelta el</div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>{formatoDia(r.fecha_devolucion_real)}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>Devuelta el</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)" }}>{formatoDia(r.fecha_devolucion_real)}</div>
                 </div>
                 {r.tarifa_total != null && (
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 11.5, color: "#6B6255" }}>Total cobrado</div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>${Number(r.tarifa_total).toFixed(2)}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>Total cobrado</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text)" }}>${Number(r.tarifa_total).toFixed(2)}</div>
                   </div>
                 )}
-                <button className="btn-secondary" onClick={() => setContratoVisible(r)}>Ver contrato</button>
+                <button className="v2-btn-secondary" onClick={() => setContratoVisible(r)}>Ver contrato</button>
               </div>
             </div>
           ))}

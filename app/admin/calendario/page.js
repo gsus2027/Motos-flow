@@ -50,7 +50,7 @@ export default function Calendario() {
     return map;
   }, [rentas]);
 
-  if (cargando) return <div style={{ color: "#6B6255" }}>Cargando…</div>;
+  if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   const primerDia = new Date(anio, mes, 1);
   let offset = primerDia.getDay() - 1;
@@ -73,20 +73,20 @@ export default function Calendario() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Calendario</h1>
-      <p style={{ color: "#6B6255", fontSize: 14.5, margin: "6px 0 26px" }}>Vista de las fechas de devolución por mes.</p>
+      <h1 className="v2-panel-h">Calendario</h1>
+      <p className="v2-panel-sub">Vista de las fechas de devolución por mes.</p>
 
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-        <div className="card" style={{ padding: 20, width: 340 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <button className="btn-secondary" onClick={() => cambiarMes(-1)} style={{ padding: "5px 11px" }}>‹</button>
-            <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, textTransform: "capitalize" }}>{MESES[mes]} {anio}</div>
-            <button className="btn-secondary" onClick={() => cambiarMes(1)} style={{ padding: "5px 11px" }}>›</button>
+        <div className="v2-cal-card">
+          <div className="v2-cal-head">
+            <button className="v2-btn-secondary" onClick={() => cambiarMes(-1)} style={{ padding: "5px 11px" }}>‹</button>
+            <div>{MESES[mes]} {anio}</div>
+            <button className="v2-btn-secondary" onClick={() => cambiarMes(1)} style={{ padding: "5px 11px" }}>›</button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
-            {DIAS.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 11.5, color: "#9C9484", fontWeight: 600 }}>{d}</div>)}
+          <div className="v2-cal-grid" style={{ marginBottom: 4 }}>
+            {DIAS.map((d) => <div key={d} className="v2-cal-dow">{d}</div>)}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+          <div className="v2-cal-grid">
             {celdas.map((d, i) => {
               if (!d) return <div key={i} />;
               const iso = isoDe(d);
@@ -95,14 +95,13 @@ export default function Calendario() {
               const seleccionado = iso === diaSel;
               const tieneVencida = items.some((r) => estadoRenta(r) === "vencida");
               return (
-                <button key={i} onClick={() => setDiaSel(iso)} style={{
-                  aspectRatio: "1",
-                  border: seleccionado ? "2px solid #22201C" : esHoy ? "1.5px solid #F0A202" : "1px solid #E4DECB",
-                  borderRadius: 4, background: "#fff", cursor: "pointer", display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: seleccionado ? 700 : 500,
-                }}>
+                <button
+                  key={i}
+                  onClick={() => setDiaSel(iso)}
+                  className={"v2-cal-cell" + (esHoy ? " today" : "") + (seleccionado ? " sel" : "")}
+                >
                   {d}
-                  {items.length > 0 && <span style={{ width: 5, height: 5, borderRadius: "50%", background: tieneVencida ? "#C0392B" : "#F0A202", marginTop: 2 }} />}
+                  {items.length > 0 && <span className={"v2-cal-dot" + (tieneVencida ? " bad" : "")} />}
                 </button>
               );
             })}
@@ -110,15 +109,15 @@ export default function Calendario() {
         </div>
 
         <div style={{ flex: 1, minWidth: 260 }}>
-          <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, margin: "0 0 12px" }}>{formatoDia(diaSel)}</h2>
+          <h2 className="v2-sec-h" style={{ fontSize: 16 }}>{formatoDia(diaSel)}</h2>
           {rentasDelDia.length === 0 ? (
-            <div className="card" style={{ padding: 20, color: "#6B6255", fontSize: 14 }}>No hay devoluciones programadas este día.</div>
+            <div className="v2-card" style={{ padding: 20, color: "var(--text-muted)", fontSize: 14 }}>No hay devoluciones programadas este día.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {rentasDelDia.map((r) => (
-                <div key={r.id} className="card" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
-                  <span style={{ fontSize: 13 }}>{r.motos?.placa}</span>
+                <div key={r.id} className="v2-row" style={{ padding: "12px 16px" }}>
+                  <div style={{ fontWeight: 600, fontSize: 14.5, color: "var(--text)" }}>{r.cliente}</div>
+                  <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{r.motos?.placa}</span>
                 </div>
               ))}
             </div>

@@ -22,13 +22,13 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <div style={{ width: 220, background: "#1C1D1F", flexShrink: 0, display: "flex", flexDirection: "column", paddingTop: 26, paddingBottom: 20 }}>
-        <div style={{ padding: "0 18px 22px 18px", borderBottom: "1px solid #33342f" }}>
-          <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 22, color: "#F0A202", letterSpacing: "0.5px" }}>
+    <div className="v2" style={{ display: "flex", minHeight: "100vh" }}>
+      <div style={{ width: 220, background: "var(--surface)", borderRight: "1px solid var(--border)", flexShrink: 0, display: "flex", flexDirection: "column", paddingTop: 26, paddingBottom: 20 }}>
+        <div style={{ padding: "0 18px 22px 18px", borderBottom: "1px solid var(--border)" }}>
+          <div className="v2-brand" style={{ fontSize: 22, color: "var(--accent)" }}>
             FLOW RENTALS
           </div>
-          <div style={{ fontSize: 12.5, color: "#8A8577", marginTop: 2 }}>control de renta de vehículos</div>
+          <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>control de renta de vehículos</div>
         </div>
         <div style={{ marginTop: 14 }}>
           {NAV.map(([href, label]) => (

@@ -81,3 +81,130 @@ button, input, select, textarea { font-family: inherit; }
 @media print {
   .no-print { display: none !important; }
 }
+
+/* ============================================================
+   Rediseño — landing (/) y formulario de renta de moto (/rentar)
+   Clases nuevas, con prefijo v2-, que no tocan .card/.field/.btn-*
+   para no afectar admin, ebike ni los contratos.
+   ============================================================ */
+.v2 {
+  --bg: #15171A;
+  --surface: #1F2226;
+  --surface-2: #26282B;
+  --text: #F2F0EA;
+  --text-muted: #B4AD9C;
+  --border: #3A362E;
+  --accent: #F0A202;
+  --accent-ink: #22201C;
+  --ebike: #2FB88F;
+  --ebike-ink: #0B2A22;
+  --required: #E0644F;
+  --placeholder-bg: #2b2e33;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.v2-brand { font-family: 'Big Shoulders Display', 'Oswald', sans-serif; font-weight: 900; letter-spacing: 0.02em; }
+.v2-mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+.v2-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+
+.v2-field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; font-family: 'IBM Plex Sans', sans-serif; }
+.v2-field input, .v2-field select, .v2-field textarea {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px;
+  background: var(--surface-2); color: var(--text); font-family: 'IBM Plex Sans', sans-serif;
+}
+.v2-field input::placeholder, .v2-field textarea::placeholder { color: #6B6F73; }
+.v2-field input:focus, .v2-field select:focus, .v2-field textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(240,162,2,0.22);
+}
+
+.v2-btn-moto {
+  background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 13px 18px;
+  font-weight: 700; font-size: 14.5px; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+}
+.v2-btn-moto:hover { filter: brightness(1.08); }
+
+.v2-btn-ebike {
+  background: transparent; color: var(--ebike); border: 1.5px solid var(--ebike); border-radius: 9px; padding: 13px 18px;
+  font-weight: 700; font-size: 14.5px; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+}
+.v2-btn-ebike:hover { background: rgba(47,184,143,0.12); }
+
+.v2-btn-ghost {
+  background: transparent; color: var(--text-muted); border: none; font-size: 12.5px; font-family: 'IBM Plex Sans', sans-serif;
+  cursor: pointer; padding: 8px 4px; width: 100%; text-align: center;
+}
+.v2-btn-ghost:hover { color: var(--text); }
+
+.v2-btn-primary {
+  background: var(--accent); color: var(--accent-ink); border: none; border-radius: 9px; padding: 13px 18px;
+  font-weight: 700; font-size: 14.5px; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer;
+}
+.v2-btn-primary:hover { filter: brightness(1.08); }
+.v2-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
+
+.v2-btn-secondary {
+  background: transparent; color: var(--text); border: 1.5px solid var(--border); border-radius: 9px; padding: 11px 16px;
+  font-weight: 600; font-size: 13.5px; font-family: 'IBM Plex Sans', sans-serif; cursor: pointer;
+}
+.v2-btn-secondary:hover { background: var(--surface-2); }
+.v2-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.v2-section-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--accent); margin: 20px 0 10px; padding-top: 16px; border-top: 1px dashed var(--border);
+}
+.v2-section-label.first { border-top: none; margin-top: 0; padding-top: 0; }
+
+.v2-step-strip { display: flex; gap: 6px; }
+.v2-step-strip .dash { height: 4px; flex: 1; border-radius: 2px; background: var(--border); }
+.v2-step-strip .dash.on { background: var(--accent); }
+
+.v2-plate {
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--surface-2); border: 1px solid var(--accent);
+  color: var(--accent); padding: 5px 9px; border-radius: 6px; letter-spacing: 0.06em; display: inline-block;
+}
+.v2-helper { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+.v2-required { color: var(--required); }
+.v2-error {
+  margin-top: 16px; background: #3a1f1c; color: #ff9d8d; padding: 11px 14px; border-radius: 8px;
+  font-size: 13.5px; border: 1px solid #5c2a24;
+}
+.v2-upload { border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 14px; }
+
+/* ---- Admin: panel, flota, calendario, historial ---- */
+.v2-panel-h { font-family: 'Big Shoulders Display', sans-serif; font-weight: 800; font-size: 26px; color: var(--text); margin: 0; }
+.v2-panel-sub { color: var(--text-muted); font-size: 14.5px; margin: 6px 0 26px; }
+.v2-sec-h { font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; font-size: 17px; color: var(--text); margin: 0 0 12px; }
+
+.v2-stat-row { display: flex; gap: 14px; margin-bottom: 30px; flex-wrap: wrap; }
+.v2-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 22px; min-width: 140px; }
+.v2-stat .n { font-family: 'Big Shoulders Display', sans-serif; font-size: 30px; font-weight: 800; color: var(--text); }
+.v2-stat .n.ok { color: var(--ebike); } .v2-stat .n.warn { color: var(--accent); } .v2-stat .n.bad { color: var(--required); }
+.v2-stat .l { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+.v2-row { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.v2-tag { font-size: 11px; font-weight: 700; color: var(--text-muted); background: var(--surface-2); padding: 2px 8px; border-radius: 3px; text-transform: uppercase; }
+
+.v2-status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.v2-status .d { width: 6px; height: 6px; border-radius: 50%; }
+.v2-status.activa { background: rgba(47,184,143,.15); color: var(--ebike); } .v2-status.activa .d { background: var(--ebike); }
+.v2-status.porvencer { background: rgba(240,162,2,.16); color: var(--accent); } .v2-status.porvencer .d { background: var(--accent); }
+.v2-status.vencida { background: rgba(224,100,79,.18); color: var(--required); } .v2-status.vencida .d { background: var(--required); }
+.v2-status.devuelta { background: var(--surface-2); color: var(--text-muted); } .v2-status.devuelta .d { background: var(--text-muted); }
+
+.v2-fleet-model { font-size: 14.5px; color: var(--text); }
+.v2-avail { font-size: 12.5px; font-weight: 600; } .v2-avail.free { color: var(--ebike); } .v2-avail.busy { color: var(--accent); }
+
+.v2-cal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; width: 320px; flex-shrink: 0; }
+.v2-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-family: 'Big Shoulders Display', sans-serif; font-weight: 700; font-size: 16px; color: var(--text); text-transform: capitalize; }
+.v2-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.v2-cal-dow { text-align: center; font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+.v2-cal-cell { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-2); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: var(--text); }
+.v2-cal-cell.today { border-color: var(--accent); }
+.v2-cal-cell.sel { border: 2px solid var(--text); font-weight: 700; }
+.v2-cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 2px; }
+.v2-cal-dot.bad { background: var(--required); }
