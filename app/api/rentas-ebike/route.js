@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { calcularTarifaEbike } from "@/lib/pricing";
+import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
 function requiereStaff(req) {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
@@ -22,6 +23,11 @@ export async function GET(req) {
 
 // POST: pública — el cliente registra su propia renta desde /rentar-ebike
 export async function POST(req) {
+  const { exito } = await verificarLimite(limitadorEscritura, ipDelRequest(req));
+  if (!exito) {
+    return NextResponse.json({ error: "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo." }, { status: 429 });
+  }
+
   const body = await req.json();
   const {
     ebikeId, idioma, cliente, cedula, telefono, hotel, pais, correo,

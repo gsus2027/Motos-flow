@@ -1,6 +1,7 @@
 "use client";
 import { TEXTOS_CONTRATO_EBIKE } from "@/lib/textos";
 import ContratoTextoEbike from "./ContratoTextoEbike";
+import ImagenPrivada from "./ImagenPrivada";
 
 function formatoDia(iso) {
   if (!iso) return "—";
@@ -36,8 +37,7 @@ export default function ContratoModalEbike({ renta, ebike, onCerrar }) {
         <div style={{ display: "flex", gap: 40, marginTop: 44, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 220 }}>
             {renta.firma_cliente_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={renta.firma_cliente_url} alt="Firma del cliente" style={{ height: 60, borderBottom: "1px solid #333" }} />
+              <ImagenPrivada path={renta.firma_cliente_url} alt="Firma del cliente" style={{ height: 60, borderBottom: "1px solid #333" }} />
             ) : (
               <div style={{ borderTop: "1px solid #333", marginTop: 40 }} />
             )}

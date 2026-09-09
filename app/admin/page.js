@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import ContratoModal from "@/components/ContratoModal";
 import ContratoModalEbike from "@/components/ContratoModalEbike";
+import ImagenPrivada from "@/components/ImagenPrivada";
 
 function formatoDia(iso) {
   if (!iso) return "—";
@@ -113,12 +114,7 @@ export default function Panel() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {rentasActivas.map((r) => (
             <div key={`${r._tipo}-${r.id}`} className="card" style={{ padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-              {r.foto_carnet_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={r.foto_carnet_url} alt="Carnet" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 4 }} />
-              ) : (
-                <div style={{ width: 46, height: 46, borderRadius: 4, background: "#F3EEE2" }} />
-              )}
+              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 4 }} />
               <div style={{ minWidth: 140 }}>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{r.cliente}</div>
                 <div style={{ fontSize: 12.5, color: "#6B6255" }}>{r.cedula}</div>

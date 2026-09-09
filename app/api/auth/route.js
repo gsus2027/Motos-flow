@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { crearToken, SESSION_COOKIE_NAME } from "@/lib/session";
+import { limitadorAuth, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
 // GET: indica si ya existe un código de acceso configurado
 export async function GET() {
@@ -11,6 +12,14 @@ export async function GET() {
 
 // POST: crea el código (si no existe) o valida el código enviado
 export async function POST(req) {
+  const { exito } = await verificarLimite(limitadorAuth, ipDelRequest(req));
+  if (!exito) {
+    return NextResponse.json(
+      { error: "Demasiados intentos. Espera unos minutos e inténtalo de nuevo." },
+      { status: 429 }
+    );
+  }
+
   const { pin } = await req.json();
   if (!pin || String(pin).trim().length < 4) {
     return NextResponse.json({ error: "El código debe tener al menos 4 caracteres." }, { status: 400 });

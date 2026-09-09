@@ -130,8 +130,8 @@ export default function FormularioRenta({ onExito }) {
           horaEntrega: form.horaEntrega,
           fechaPrevista: form.fechaPrevista,
           notas: form.notas,
-          fotoCarnetUrl: subeFoto.url,
-          firmaClienteUrl: subeFirma.url,
+          fotoCarnetUrl: subeFoto.path,
+          firmaClienteUrl: subeFirma.path,
           aceptoTerminos: true,
         }),
       }).then((r) => r.json());

@@ -93,7 +93,7 @@ export default function FormularioRentaEbike({ onExito }) {
           fechaEntrega: form.fechaEntrega,
           fechaPrevista: form.fechaPrevista,
           notas: form.notas,
-          firmaClienteUrl: subeFirma.url,
+          firmaClienteUrl: subeFirma.path,
           aceptoTerminos: true,
         }),
       }).then((r) => r.json());
