@@ -287,16 +287,16 @@ export default function FormularioRenta({ onExito }) {
         <hr className="seccion-divisor" />
         <div className="seccion-titulo">{t.seccionEntrega}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div className="field">
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaEntrega}</label>
-            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
-          </div>
-          <div className="field">
-            <label>{t.horaEntrega}</label>
-            <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
+            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} style={{ maxWidth: 220 }} />
           </div>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
-            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: -6, marginBottom: 4 }}>{t.horaEntregaAyuda}</div>
+            <label>{t.horaEntrega}</label>
+            <div style={{ maxWidth: 220 }}>
+              <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 4 }}>{t.horaEntregaAyuda}</div>
           </div>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaPrevista}</label>

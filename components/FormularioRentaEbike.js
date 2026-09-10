@@ -242,13 +242,13 @@ export default function FormularioRentaEbike({ onExito }) {
         <hr className="seccion-divisor" />
         <div className="seccion-titulo">{t.seccionEntrega}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div className="field">
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaEntrega}</label>
-            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
+            <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} style={{ maxWidth: 220 }} />
           </div>
-          <div className="field">
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaPrevista}</label>
-            <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} />
+            <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} style={{ maxWidth: 220 }} />
           </div>
 
           {resultadoTarifa && (
