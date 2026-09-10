@@ -42,7 +42,7 @@ function Badge({ estado }) {
 function Stat({ label, value, color }) {
   return (
     <div className="card" style={{ padding: "16px 22px", minWidth: 140 }}>
-      <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 30, fontWeight: 600, color: color || "var(--text)" }}>{value}</div>
+      <div style={{ fontFamily: "var(--font-heading)", fontSize: 30, fontWeight: 600, color: color || "var(--text)" }}>{value}</div>
       <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>{label}</div>
     </div>
   );
@@ -95,7 +95,7 @@ export default function Panel() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Panel</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Panel</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Estado actual de la flota (motos + ebikes) y las rentas en curso.</p>
 
       <div style={{ display: "flex", gap: 14, marginBottom: 30, flexWrap: "wrap" }}>
@@ -105,7 +105,7 @@ export default function Panel() {
         <Stat label="Vencidos" value={vencidas} color="#C0392B" />
       </div>
 
-      <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 17, margin: "0 0 12px" }}>Rentas en curso</h2>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 12px" }}>Rentas en curso</h2>
       {rentasActivas.length === 0 ? (
         <div className="card" style={{ padding: 24, color: "var(--text-muted)", fontSize: 14.5 }}>
           No hay vehículos rentados en este momento. Ve a "Nueva renta" para registrar una.

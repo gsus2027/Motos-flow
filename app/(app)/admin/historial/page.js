@@ -48,7 +48,7 @@ export default function Historial() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Historial</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Historial</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>
         Rentas ya devueltas (motos y ebikes) — busca por cliente, cédula o vehículo para ver su contrato.
       </p>
@@ -74,7 +74,7 @@ export default function Historial() {
                 <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{r.cedula}</div>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#6B6255", background: "#F3EEE2", padding: "2px 8px", borderRadius: 3, textTransform: "uppercase" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", background: "var(--panel-2)", padding: "2px 8px", borderRadius: 3, textTransform: "uppercase" }}>
                 {r._tipo === "ebike" ? "Ebike" : "Moto"}
               </span>
               <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{r._vehiculo}</div>

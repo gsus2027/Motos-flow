@@ -108,7 +108,7 @@ export default function PantallaEquipo() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: 24, fontWeight: 600, margin: 0 }}>Equipo</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 600, margin: 0 }}>Equipo</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>
         Cada persona entra con su propio nombre y PIN. Desactiva a alguien si deja el equipo — no borra su historial.
       </p>
@@ -133,10 +133,10 @@ export default function PantallaEquipo() {
       </div>
 
       {mensaje && (
-        <div style={{ marginBottom: 18, background: "#173420", color: "#8FE0AC", padding: 11, borderRadius: 6, fontSize: 13.5, maxWidth: 620 }}>{mensaje}</div>
+        <div style={{ marginBottom: 18, background: "#E8F7ED", color: "#1E7A38", padding: 11, borderRadius: 6, fontSize: 13.5, maxWidth: 620 }}>{mensaje}</div>
       )}
       {error && (
-        <div style={{ marginBottom: 18, background: "#3A2323", color: "#F3A9A4", padding: 11, borderRadius: 6, fontSize: 13.5, maxWidth: 620 }}>{error}</div>
+        <div style={{ marginBottom: 18, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 11, borderRadius: 6, fontSize: 13.5, maxWidth: 620 }}>{error}</div>
       )}
 
       <div className="card" style={{ padding: 0, maxWidth: 620, overflow: "hidden" }}>

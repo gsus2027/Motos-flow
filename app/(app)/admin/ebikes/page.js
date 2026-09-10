@@ -51,7 +51,7 @@ export default function FlotaEbikes() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Flota de Ebikes</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Flota de Ebikes</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Agrega y administra las bicicletas eléctricas disponibles ($15/día c/u).</p>
 
       <div className="card" style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 26 }}>
@@ -60,8 +60,8 @@ export default function FlotaEbikes() {
           <input value={numero} onChange={(e) => setNumero(e.target.value)} onKeyDown={(e) => e.key === "Enter" && agregar()} placeholder="E-01" />
         </div>
         <button type="button" onClick={agregar} className="btn-primary">Agregar ebike</button>
-        {error && <div style={{ width: "100%", color: "#C0392B", fontSize: 13.5 }}>{error}</div>}
-        {ok && <div style={{ width: "100%", color: "#245939", fontSize: 13.5 }}>{ok}</div>}
+        {error && <div style={{ width: "100%", color: "var(--danger)", fontSize: 13.5 }}>{error}</div>}
+        {ok && <div style={{ width: "100%", color: "#1E7A38", fontSize: 13.5 }}>{ok}</div>}
       </div>
 
       {ebikes.length === 0 ? (
@@ -72,11 +72,11 @@ export default function FlotaEbikes() {
             const ocupada = idsOcupadas.has(e.id);
             return (
               <div key={e.id} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #1a1a1a", borderRadius: 4, padding: "3px 9px", background: "#fff", color: "#1a1a1a" }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #1a1a1a", borderRadius: 4, padding: "3px 9px", background: "#fff", color: "#1a1a1a" }}>
                   Ebike {e.numero}
                 </span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#245939", fontWeight: 600 }}>
+                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#1E7A38", fontWeight: 600 }}>
                     {ocupada ? "alquilada" : "disponible"}
                   </span>
                   <button

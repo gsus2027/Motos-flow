@@ -74,7 +74,7 @@ export default function PantallaReportes() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: 24, fontWeight: 600, margin: 0 }}>Dinero</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 600, margin: 0 }}>Dinero</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 22px" }}>
         Ingresos por renta, con filtros de fecha, de quién la atendió, y de vehículo.
       </p>
@@ -123,7 +123,7 @@ export default function PantallaReportes() {
       </div>
 
       {error && (
-        <div style={{ marginBottom: 18, background: "#3A2323", color: "#F3A9A4", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
+        <div style={{ marginBottom: 18, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
       )}
 
       {datos && (
@@ -131,13 +131,13 @@ export default function PantallaReportes() {
           <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
             <div className="card" style={{ padding: "16px 22px" }}>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Ingresos totales</div>
-              <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, color: "var(--amber)" }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, color: "var(--amber)" }}>
                 ${datos.resumen.totalIngresos.toFixed(2)}
               </div>
             </div>
             <div className="card" style={{ padding: "16px 22px" }}>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Rentas en el rango</div>
-              <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26 }}>
+              <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26 }}>
                 {datos.resumen.totalRentas}
               </div>
             </div>

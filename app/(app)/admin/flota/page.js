@@ -53,7 +53,7 @@ export default function Flota() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Flota</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Flota</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Agrega y administra las motos disponibles para renta.</p>
 
       <div className="card" style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 26 }}>
@@ -73,8 +73,8 @@ export default function Flota() {
           </select>
         </div>
         <button type="button" onClick={agregar} className="btn-primary">Agregar moto</button>
-        {error && <div style={{ width: "100%", color: "#C0392B", fontSize: 13.5 }}>{error}</div>}
-        {ok && <div style={{ width: "100%", color: "#245939", fontSize: 13.5 }}>{ok}</div>}
+        {error && <div style={{ width: "100%", color: "var(--danger)", fontSize: 13.5 }}>{error}</div>}
+        {ok && <div style={{ width: "100%", color: "#1E7A38", fontSize: 13.5 }}>{ok}</div>}
       </div>
 
       {motos.length === 0 ? (
@@ -85,15 +85,15 @@ export default function Flota() {
             const ocupada = idsOcupadas.has(m.id);
             return (
               <div key={m.id} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #1a1a1a", borderRadius: 4, padding: "3px 9px", background: "#fff", color: "#1a1a1a" }}>
+                <span style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #1a1a1a", borderRadius: 4, padding: "3px 9px", background: "#fff", color: "#1a1a1a" }}>
                   {m.placa}
                 </span>
                 <div style={{ fontSize: 14.5 }}>{m.modelo}</div>
-                <span style={{ fontSize: 12, color: "#6B6255", background: "#F3EEE2", padding: "3px 9px", borderRadius: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--panel-2)", padding: "3px 9px", borderRadius: 3 }}>
                   {m.tipo === "scooter" ? "Scooter" : "Honda Navi"}
                 </span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#245939", fontWeight: 600 }}>
+                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#1E7A38", fontWeight: 600 }}>
                     {ocupada ? "alquilada" : "disponible"}
                   </span>
                   <button

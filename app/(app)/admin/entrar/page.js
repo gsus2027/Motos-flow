@@ -61,9 +61,9 @@ export default function EntrarPanel() {
   const hayEquipo = staff.length > 0;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#1C1D1F", padding: 20 }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--panel-2)", padding: 20 }}>
       <div className="card" style={{ maxWidth: 380, width: "100%", padding: 30 }}>
-        <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 20, marginBottom: 4, color: "var(--text)" }}>FLOW RENTALS</div>
+        <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 20, marginBottom: 4, color: "var(--text)" }}>Flow Rentals</div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
           {hayEquipo
             ? "Elige tu nombre e ingresa tu PIN para entrar al panel."
@@ -103,7 +103,7 @@ export default function EntrarPanel() {
             </button>
           </>
         )}
-        {error && <div style={{ marginTop: 12, color: "#F3A9A4", fontSize: 13 }}>{error}</div>}
+        {error && <div style={{ marginTop: 12, color: "var(--danger-text)", fontSize: 13 }}>{error}</div>}
       </div>
     </div>
   );

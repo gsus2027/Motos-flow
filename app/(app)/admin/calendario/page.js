@@ -73,18 +73,18 @@ export default function Calendario() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 26, margin: 0 }}>Calendario</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Calendario</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Vista de las fechas de devolución por mes.</p>
 
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
         <div className="card" style={{ padding: 20, width: 340 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <button className="btn-secondary" onClick={() => cambiarMes(-1)} style={{ padding: "5px 11px" }}>‹</button>
-            <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, textTransform: "capitalize" }}>{MESES[mes]} {anio}</div>
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16, textTransform: "capitalize" }}>{MESES[mes]} {anio}</div>
             <button className="btn-secondary" onClick={() => cambiarMes(1)} style={{ padding: "5px 11px" }}>›</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
-            {DIAS.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 11.5, color: "#9C9484", fontWeight: 600 }}>{d}</div>)}
+            {DIAS.map((d) => <div key={d} style={{ textAlign: "center", fontSize: 11.5, color: "var(--text-muted)", fontWeight: 600 }}>{d}</div>)}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
             {celdas.map((d, i) => {
@@ -97,7 +97,7 @@ export default function Calendario() {
               return (
                 <button key={i} onClick={() => setDiaSel(iso)} style={{
                   aspectRatio: "1",
-                  border: seleccionado ? "2px solid #22201C" : esHoy ? "1.5px solid #F0A202" : "1px solid #E4DECB",
+                  border: seleccionado ? "2px solid var(--text)" : esHoy ? "1.5px solid var(--amber)" : "1px solid var(--border)",
                   borderRadius: 4, background: "var(--panel-2)", cursor: "pointer", display: "flex", flexDirection: "column", color: "var(--text)",
                   alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: seleccionado ? 700 : 500,
                 }}>
@@ -110,7 +110,7 @@ export default function Calendario() {
         </div>
 
         <div style={{ flex: 1, minWidth: 260 }}>
-          <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 16, margin: "0 0 12px" }}>{formatoDia(diaSel)}</h2>
+          <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16, margin: "0 0 12px" }}>{formatoDia(diaSel)}</h2>
           {rentasDelDia.length === 0 ? (
             <div className="card" style={{ padding: 20, color: "var(--text-muted)", fontSize: 14 }}>No hay devoluciones programadas este día.</div>
           ) : (

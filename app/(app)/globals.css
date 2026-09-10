@@ -1,41 +1,11 @@
 * { box-sizing: border-box; }
 
-:root {
-  --bg: #16171A;
-  --panel: #1E2023;
-  --panel-2: #242629;
-  --border: #34363A;
-  --border-strong: #45474C;
-  --text: #F3F1EA;
-  --text-muted: #9B9890;
-  --amber: #F0A230;
-  --amber-text: #17181A;
-  --danger: #E5605A;
-  --danger-bg: #3A2323;
-  --danger-text: #F3A9A4;
-  --highlight-bg: #2A2411;
-  --highlight-border: var(--amber);
-  --highlight-text: var(--amber);
-  --warning-bg: #3A2E14;
-  --warning-text: #F0C87A;
-  --paper-bg: #EFEAE0;
-  --paper-text: #1a1a1a;
-  --font-heading: 'Oswald', sans-serif;
-  --radius-card: 8px;
-  --radius-input: 6px;
-  --radius-btn: 6px;
-  --seccion-color: var(--amber);
-  --seccion-transform: uppercase;
-  --seccion-tracking: 1.5px;
-  --seccion-weight: 700;
-}
-
 /* ============================================================
-   Tema "Apple" — solo para los formularios que ve el cliente
-   (/rentar y /rentar-ebike). El panel interno NO usa esta clase,
-   así que sigue exactamente igual que antes.
+   Estilo "Apple": blanco, azul de acento, tipografía del
+   sistema, esquinas redondeadas. Es el estilo de TODA la app
+   (panel interno + formularios del cliente).
    ============================================================ */
-.tema-cliente {
+:root {
   --bg: #FFFFFF;
   --panel: #FFFFFF;
   --panel-2: #F5F5F7;
@@ -55,7 +25,13 @@
   --warning-text: #8A6100;
   --paper-bg: #F5F5F7;
   --paper-text: #1D1D1F;
+  --sidebar-bg: #F5F5F7;
+  --sidebar-border: #D2D2D7;
+  --sidebar-text: #1D1D1F;
+  --sidebar-text-muted: #6E6E73;
+  --sidebar-hover: #E8E8ED;
   --font-heading: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
   --radius-card: 18px;
   --radius-input: 12px;
   --radius-btn: 980px;
@@ -63,11 +39,6 @@
   --seccion-transform: none;
   --seccion-tracking: normal;
   --seccion-weight: 600;
-
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
-  min-height: 100vh;
 }
 
 html, body {
@@ -75,7 +46,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Work Sans', sans-serif;
+  font-family: var(--font-body);
 }
 
 button, input, select, textarea { font-family: inherit; }
@@ -84,86 +55,89 @@ button, input, select, textarea { font-family: inherit; }
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
+
+.field { min-width: 0; }
 
 .field label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
 }
 
 .field input,
 .field select {
   width: 100%;
-  padding: 9px 11px;
-  border: 1.5px solid var(--border);
+  padding: 13px 16px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-input);
-  font-size: 14.5px;
+  font-size: 16px;
   background: var(--panel-2);
   color: var(--text);
 }
 
-.field input::placeholder { color: #5D5B55; }
-.tema-cliente .field input::placeholder { color: #86868B; }
+.field input::placeholder { color: #86868B; }
 
 .field input:focus,
 .field select:focus {
   outline: none;
   border-color: var(--amber);
+  box-shadow: 0 0 0 4px rgba(0,113,227,0.12);
 }
 
 .btn-primary {
   background: var(--amber);
   color: var(--amber-text);
   border: none;
-  padding: 11px 22px;
+  padding: 14px 28px;
   border-radius: var(--radius-btn);
-  font-weight: 700;
-  font-size: 14.5px;
+  font-weight: 600;
+  font-size: 16px;
   cursor: pointer;
 }
-.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:hover { background: #0077ED; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-secondary {
   background: transparent;
   color: var(--text);
-  border: 1.5px solid var(--border-strong);
-  padding: 9px 18px;
+  border: 1px solid var(--border-strong);
+  padding: 12px 24px;
   border-radius: var(--radius-btn);
-  font-weight: 600;
-  font-size: 13.5px;
+  font-weight: 500;
+  font-size: 15px;
   cursor: pointer;
 }
-.btn-secondary:hover { border-color: var(--amber); color: var(--amber); }
+.btn-secondary:hover { border-color: var(--amber); color: var(--amber); background: #F5F5F7; }
 .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-danger { color: var(--danger); border-color: var(--danger); }
-.btn-danger:hover { background: var(--danger); color: #17181A; border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
 
 .nav-btn {
   display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  padding: 10px 18px; border: none; background: transparent; color: #C9C4B6;
+  padding: 10px 18px; border: none; background: transparent; color: var(--sidebar-text-muted);
   font-size: 14.5px; font-weight: 500; cursor: pointer; border-left: 3px solid transparent;
+  border-radius: 0;
 }
-.nav-btn:hover { background: #26282B; color: #fff; }
-.nav-btn.active { background: #26282B; color: var(--amber); border-left: 3px solid var(--amber); }
+.nav-btn:hover { background: var(--sidebar-hover); color: var(--sidebar-text); }
+.nav-btn.active { background: var(--sidebar-hover); color: var(--amber); border-left: 3px solid var(--amber); }
 
 .seccion-titulo {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--seccion-weight);
   letter-spacing: var(--seccion-tracking);
   color: var(--seccion-color);
   text-transform: var(--seccion-transform);
   margin: 0 0 14px;
 }
-.tema-cliente .seccion-titulo { font-size: 13px; }
 
 .seccion-divisor {
   border: none;
-  border-top: 1px dashed var(--border-strong);
+  border-top: 1px solid var(--border);
   margin: 26px 0;
 }
 
@@ -179,17 +153,6 @@ button, input, select, textarea { font-family: inherit; }
   background: var(--border);
 }
 .paso-barra-seg.activo { background: var(--amber); }
-
-.tema-cliente .card { box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-.tema-cliente .btn-primary { padding: 14px 28px; font-size: 16px; font-weight: 600; letter-spacing: -0.01px; }
-.tema-cliente .btn-primary:hover { filter: none; background: #0077ED; }
-.tema-cliente .btn-secondary { padding: 12px 24px; font-size: 15px; font-weight: 500; }
-.tema-cliente .btn-secondary:hover { border-color: var(--amber); color: var(--amber); background: #F5F5F7; }
-.tema-cliente .field label { font-size: 14px; font-weight: 500; color: #1D1D1F; }
-.tema-cliente .field input,
-.tema-cliente .field select { padding: 13px 16px; font-size: 16px; border-width: 1px; }
-.tema-cliente .field input:focus,
-.tema-cliente .field select:focus { border-color: var(--amber); box-shadow: 0 0 0 4px rgba(0,113,227,0.12); }
 
 @media print {
   .no-print { display: none !important; }

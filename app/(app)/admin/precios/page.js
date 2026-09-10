@@ -81,7 +81,7 @@ export default function PantallaPrecios() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: 24, fontWeight: 600, margin: 0 }}>Precios</h1>
+      <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 600, margin: 0 }}>Precios</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>
         Cambia las tarifas aquí cuando entres o salgas de temporada baja/alta — se aplican de inmediato, sin tocar código.
       </p>
@@ -109,10 +109,10 @@ export default function PantallaPrecios() {
         </div>
 
         {mensaje && (
-          <div style={{ marginTop: 18, background: "#173420", color: "#8FE0AC", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{mensaje}</div>
+          <div style={{ marginTop: 18, background: "#E8F7ED", color: "#1E7A38", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{mensaje}</div>
         )}
         {error && (
-          <div style={{ marginTop: 18, background: "#3A2323", color: "#F3A9A4", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
+          <div style={{ marginTop: 18, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
         )}
 
         <div style={{ marginTop: 22 }}>

@@ -36,16 +36,16 @@ export default function AdminLayout({ children }) {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      <div style={{ width: 220, background: "#1C1D1F", flexShrink: 0, display: "flex", flexDirection: "column", paddingTop: 26, paddingBottom: 20 }}>
-        <div style={{ padding: "0 18px 22px 18px", borderBottom: "1px solid #33342f" }}>
-          <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 700, fontSize: 22, color: "#F0A202", letterSpacing: "0.5px" }}>
-            FLOW RENTALS
+      <div style={{ width: 220, background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)", flexShrink: 0, display: "flex", flexDirection: "column", paddingTop: 26, paddingBottom: 20 }}>
+        <div style={{ padding: "0 18px 22px 18px", borderBottom: "1px solid var(--sidebar-border)" }}>
+          <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 20, color: "var(--sidebar-text)", letterSpacing: "-0.02em" }}>
+            Flow Rentals
           </div>
-          <div style={{ fontSize: 12.5, color: "#8A8577", marginTop: 2 }}>control de renta de vehículos</div>
+          <div style={{ fontSize: 12.5, color: "var(--sidebar-text-muted)", marginTop: 2 }}>control de renta de vehículos</div>
         </div>
         {staffActual && (
-          <div style={{ padding: "12px 18px", fontSize: 12.5, color: "#C9C4B6", borderBottom: "1px solid #33342f" }}>
-            Conectado como <strong style={{ color: "#F0A202" }}>{staffActual.nombre}</strong>
+          <div style={{ padding: "12px 18px", fontSize: 12.5, color: "var(--sidebar-text-muted)", borderBottom: "1px solid var(--sidebar-border)" }}>
+            Conectado como <strong style={{ color: "var(--amber)" }}>{staffActual.nombre}</strong>
           </div>
         )}
         <div style={{ marginTop: 14 }}>
