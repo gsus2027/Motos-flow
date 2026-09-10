@@ -64,12 +64,30 @@ export async function POST(req) {
   }
 
   const { data: moto } = await db.from("motos").select("tipo").eq("id", motoId).maybeSingle();
+  const { data: configTarifas } = await db.from("configuracion").select("valor").eq("clave", "tarifas").maybeSingle();
+  let tarifas;
+  try {
+    tarifas = configTarifas?.valor ? JSON.parse(configTarifas.valor) : undefined;
+  } catch {
+    tarifas = undefined;
+  }
   const resultado = calcularTarifa({
     tipoMoto: moto?.tipo,
     fechaEntrega,
     horaEntrega,
     fechaPrevista,
+    tarifas,
   });
+
+  // Si quien manda esto tiene sesión de staff activa, se registra quién
+  // atendió la renta (útil para saber quién la creó). Si es un cliente
+  // llenando el formulario público por su cuenta, queda en blanco.
+  const sesion = await tokenValido(req.cookies.get(SESSION_COOKIE_NAME)?.value);
+  let atendidoPor = null;
+  if (sesion) {
+    const { data: staffActual } = await db.from("staff").select("nombre").eq("id", sesion.staffId).maybeSingle();
+    atendidoPor = staffActual?.nombre || null;
+  }
 
   const { data, error } = await db
     .from("rentas")
@@ -92,6 +110,7 @@ export async function POST(req) {
       acepto_terminos: true,
       tarifa_total: resultado.total,
       tarifa_regla: resultado.regla,
+      atendido_por: atendidoPor,
     })
     .select()
     .single();

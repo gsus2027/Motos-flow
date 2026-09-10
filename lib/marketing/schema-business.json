@@ -1,0 +1,50 @@
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "Flow Rentals",
+  "alternateName": "Flow e bike y motos",
+  "description": "E-bike, moped and scooter rental shop on Isla Colón, Bocas del Toro, Panama. Daily and half-day rates, hotel delivery available, booking by WhatsApp.",
+  "telephone": "+507-6909-2074",
+  "priceRange": "$20-$35",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Calle Primera, frente a la estación de Policía",
+    "addressLocality": "Isla Colón, Bocas del Toro",
+    "addressCountry": "PA"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 9.3393412,
+    "longitude": -82.2397397
+  },
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+    "opens": "09:00",
+    "closes": "19:00"
+  },
+  "sameAs": ["https://maps.app.goo.gl/YMtEXvCsiLfiKm526"],
+  "makesOffer": [
+    {
+      "@type": "Offer",
+      "itemOffered": {"@type":"Product", "name": "Honda Navi rental"},
+      "price": "30",
+      "priceCurrency": "USD",
+      "description": "Full-day rental of an automatic Honda Navi moto. $25 for 4 hours after 2:00 PM."
+    },
+    {
+      "@type": "Offer",
+      "itemOffered": {"@type":"Product", "name": "Scooter rental"},
+      "price": "35",
+      "priceCurrency": "USD",
+      "description": "Full-day scooter rental. $30 for 4 hours after 2:00 PM."
+    },
+    {
+      "@type": "Offer",
+      "itemOffered": {"@type":"Product", "name": "E-bike rental"},
+      "price": "20",
+      "priceCurrency": "USD",
+      "description": "Flat-rate electric bike rental, no license required."
+    }
+  ]
+}

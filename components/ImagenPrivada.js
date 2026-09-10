@@ -19,7 +19,7 @@ export default function ImagenPrivada({ path, alt, style }) {
   }, [path]);
 
   if (!path || error || !url) {
-    return <div style={{ ...style, background: "var(--placeholder-bg, #F3EEE2)" }} />;
+    return <div style={{ ...style, background: "#F3EEE2" }} />;
   }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={url} alt={alt} style={style} />;

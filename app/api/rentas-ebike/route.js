@@ -61,7 +61,21 @@ export async function POST(req) {
     return NextResponse.json({ error: "Esa ebike ya no está disponible, elige otra." }, { status: 409 });
   }
 
-  const resultado = calcularTarifaEbike({ fechaEntrega, fechaPrevista });
+  const { data: configTarifas } = await db.from("configuracion").select("valor").eq("clave", "tarifas").maybeSingle();
+  let tarifaDia;
+  try {
+    tarifaDia = configTarifas?.valor ? JSON.parse(configTarifas.valor).ebikeDia : undefined;
+  } catch {
+    tarifaDia = undefined;
+  }
+  const resultado = calcularTarifaEbike({ fechaEntrega, fechaPrevista, tarifaDia });
+
+  const sesion = await tokenValido(req.cookies.get(SESSION_COOKIE_NAME)?.value);
+  let atendidoPor = null;
+  if (sesion) {
+    const { data: staffActual } = await db.from("staff").select("nombre").eq("id", sesion.staffId).maybeSingle();
+    atendidoPor = staffActual?.nombre || null;
+  }
 
   const { data, error } = await db
     .from("rentas_ebike")
@@ -82,6 +96,7 @@ export async function POST(req) {
       fecha_firma: new Date().toISOString().slice(0, 10),
       acepto_terminos: true,
       tarifa_total: resultado.total,
+      atendido_por: atendidoPor,
     })
     .select()
     .single();

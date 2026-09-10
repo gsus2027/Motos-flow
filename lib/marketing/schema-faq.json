@@ -1,0 +1,36 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How much does it cost to rent a scooter or moto in Bocas del Toro?",
+      "acceptedAnswer": {"@type":"Answer","text":"At Flow Rentals, a Honda Navi is $30 for a full day or $25 for 4 hours after 2:00 PM. A scooter is $35 for a full day or $30 for 4 hours after 2:00 PM. An e-bike is a flat $20. Ask about special low-season pricing."}
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need a license to rent an e-bike or moto in Bocas del Toro?",
+      "acceptedAnswer": {"@type":"Answer","text":"No license is needed to rent an e-bike from Flow Rentals. For the Honda Navi or scooter, ask about license requirements when you book."}
+    },
+    {
+      "@type": "Question",
+      "name": "What are Flow Rentals' hours?",
+      "acceptedAnswer": {"@type":"Answer","text":"Flow Rentals is open every day from 9:00 AM to 7:00 PM on Isla Colón, Bocas del Toro."}
+    },
+    {
+      "@type": "Question",
+      "name": "Where is Flow Rentals located?",
+      "acceptedAnswer": {"@type":"Answer","text":"Flow Rentals is on Calle Primera, Isla Colón, Bocas del Toro, Panama, right in front of the police station."}
+    },
+    {
+      "@type": "Question",
+      "name": "Does Flow Rentals deliver to hotels?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes, Flow Rentals offers hotel delivery and pickup on Isla Colón. Ask on WhatsApp when you book."}
+    },
+    {
+      "@type": "Question",
+      "name": "Is there a discount for renting in low season?",
+      "acceptedAnswer": {"@type":"Answer","text":"Yes, Flow Rentals offers special pricing during low season. Ask directly on WhatsApp for current rates."}
+    }
+  ]
+}

@@ -12,24 +12,10 @@ function hoyISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function PasoStrip({ paso }) {
-  const enFirma = paso === "firma";
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <div className="v2-mono" style={{ fontSize: 11, letterSpacing: "0.08em", color: "var(--text-muted)", marginBottom: 6 }}>
-        {enFirma ? "PASO 2 · 2 — TÉRMINOS Y FIRMA" : "PASO 1 · 2 — DATOS Y VEHÍCULO"}
-      </div>
-      <div className="v2-step-strip">
-        <div className="dash on" />
-        <div className={"dash" + (enFirma ? " on" : "")} />
-      </div>
-    </div>
-  );
-}
-
 export default function FormularioRenta({ onExito }) {
   const [motos, setMotos] = useState([]);
   const [cargandoMotos, setCargandoMotos] = useState(true);
+  const [tarifas, setTarifas] = useState(null);
   const [paso, setPaso] = useState("datos");
   const [form, setForm] = useState({
     idioma: "es",
@@ -57,12 +43,13 @@ export default function FormularioRenta({ onExito }) {
   const t = TEXTOS_FORM[form.idioma === "en" ? "en" : "es"];
   const tContrato = TEXTOS_CONTRATO[form.idioma === "en" ? "en" : "es"];
   const motoSeleccionada = motos.find((m) => m.id === form.motoId);
-  const resultadoTarifa = form.motoId
+  const resultadoTarifa = form.motoId && tarifas
     ? calcularTarifa({
         tipoMoto: motoSeleccionada?.tipo,
         fechaEntrega: form.fechaEntrega,
         horaEntrega: form.horaEntrega,
         fechaPrevista: form.fechaPrevista,
+        tarifas,
       })
     : null;
 
@@ -74,6 +61,10 @@ export default function FormularioRenta({ onExito }) {
         setCargandoMotos(false);
       })
       .catch(() => setCargandoMotos(false));
+    fetch("/api/precios")
+      .then((r) => r.json())
+      .then((d) => setTarifas(d.tarifas))
+      .catch(() => {});
   }, []);
 
   function set(campo, valor) {
@@ -160,15 +151,15 @@ export default function FormularioRenta({ onExito }) {
     }
   }
 
-  const motosLibres = motos; // /api/motos ya solo devuelve motos sin filtrar; el servidor valida disponibilidad al crear
+  const motosLibres = motos;
 
   if (paso === "exito") {
     return (
-      <div className="v2-card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
+      <div className="card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
-        <h2 className="v2-brand" style={{ fontSize: 20, margin: "0 0 10px", color: "var(--text)" }}>{t.exitoTitulo}</h2>
+        <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 20, margin: "0 0 10px" }}>{t.exitoTitulo}</h2>
         <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
-        <button type="button" className="v2-btn-secondary" onClick={() => window.location.reload()}>
+        <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>
           {t.otraRenta}
         </button>
       </div>
@@ -178,14 +169,21 @@ export default function FormularioRenta({ onExito }) {
   if (paso === "firma") {
     const rentaPreview = { ...form, id: "" };
     return (
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <PasoStrip paso={paso} />
-        <div className="card" style={{ padding: "34px 38px", marginBottom: 18, fontFamily: "Georgia, 'Times New Roman', serif", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
+      <div>
+        <div className="card" style={{ padding: 26, maxWidth: 720, margin: "0 auto 18px" }}>
+          <div className="paso-barra">
+            <div className="paso-barra-seg activo" />
+            <div className="paso-barra-seg activo" />
+          </div>
+          <div className="seccion-titulo">{t.pasoFirma}</div>
+        </div>
+
+        <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", background: "#EFEAE0", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
           <ContratoTexto renta={rentaPreview} moto={motoSeleccionada} t={tContrato} />
         </div>
 
-        <div className="v2-card" style={{ padding: 22 }}>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, cursor: "pointer", color: "var(--text)" }}>
+        <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto" }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, cursor: "pointer" }}>
             <input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.target.checked)} style={{ marginTop: 3 }} />
             <span>{t.acepto}</span>
           </label>
@@ -195,11 +193,13 @@ export default function FormularioRenta({ onExito }) {
             <FirmaPad onChange={setFirma} limpiarTexto={t.limpiar} />
           </div>
 
-          {error && <div className="v2-error">{error}</div>}
+          {error && (
+            <div style={{ marginTop: 18, background: "#3A2323", color: "#F3A9A4", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
+          )}
 
           <div style={{ marginTop: 22, display: "flex", gap: 10 }}>
-            <button type="button" className="v2-btn-secondary" onClick={() => setPaso("datos")}>{t.atras}</button>
-            <button type="button" className="v2-btn-primary" onClick={confirmarFirma} disabled={guardando}>
+            <button type="button" className="btn-secondary" onClick={() => setPaso("datos")}>{t.atras}</button>
+            <button type="button" className="btn-primary" onClick={confirmarFirma} disabled={guardando}>
               {guardando ? t.guardando : t.confirmarFirma}
             </button>
           </div>
@@ -209,11 +209,15 @@ export default function FormularioRenta({ onExito }) {
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      <div className="v2-card" style={{ padding: 26 }}>
-        <PasoStrip paso={paso} />
+    <div>
+      <div className="card" style={{ padding: 26, maxWidth: 640, margin: "0 auto" }}>
+        <div className="paso-barra">
+          <div className="paso-barra-seg activo" />
+          <div className="paso-barra-seg" />
+        </div>
+        <div className="seccion-titulo">{t.pasoDatos}</div>
 
-        <div className="v2-field" style={{ marginBottom: 18 }}>
+        <div className="field" style={{ marginBottom: 18 }}>
           <label>{t.idiomaLabel}</label>
           <div style={{ display: "flex", gap: 10 }}>
             {[["es", "Español"], ["en", "English"]].map(([val, label]) => (
@@ -221,7 +225,7 @@ export default function FormularioRenta({ onExito }) {
                 key={val}
                 type="button"
                 onClick={() => set("idioma", val)}
-                className={form.idioma === val ? "v2-btn-primary" : "v2-btn-secondary"}
+                className={form.idioma === val ? "btn-primary" : "btn-secondary"}
                 style={{ padding: "8px 18px", fontSize: 13.5 }}
               >
                 {label}
@@ -231,40 +235,43 @@ export default function FormularioRenta({ onExito }) {
         </div>
 
         {!cargandoMotos && motosLibres.length === 0 && (
-          <div className="v2-error" style={{ marginTop: 0 }}>{t.faltanMotos}</div>
+          <div style={{ background: "#3A2E14", color: "#F0C87A", padding: 14, borderRadius: 6, marginBottom: 20, fontSize: 14 }}>
+            {t.faltanMotos}
+          </div>
         )}
 
-        <div className="v2-section-label first">Cliente</div>
+        <div className="seccion-titulo" style={{ marginTop: 4 }}>{t.seccionCliente}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.nombreCliente} <span className="v2-required">*</span></label>
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <label>{t.nombreCliente} <span style={{ color: "var(--danger)" }}>*</span></label>
             <input value={form.cliente} onChange={(e) => set("cliente", e.target.value)} placeholder={t.nombrePlaceholder} />
           </div>
-          <div className="v2-field">
-            <label>{t.cedula} <span className="v2-required">*</span></label>
+          <div className="field">
+            <label>{t.cedula} <span style={{ color: "var(--danger)" }}>*</span></label>
             <input value={form.cedula} onChange={(e) => set("cedula", e.target.value)} placeholder={t.cedulaPlaceholder} />
           </div>
-          <div className="v2-field">
-            <label>{t.telefono} <span className="v2-required">*</span></label>
+          <div className="field">
+            <label>{t.telefono} <span style={{ color: "var(--danger)" }}>*</span></label>
             <input value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder={t.telefonoPlaceholder} />
           </div>
-          <div className="v2-field">
-            <label>{t.hotel} <span className="v2-required">*</span></label>
+          <div className="field">
+            <label>{t.hotel} <span style={{ color: "var(--danger)" }}>*</span></label>
             <input value={form.hotel} onChange={(e) => set("hotel", e.target.value)} placeholder={t.hotelPlaceholder} />
           </div>
-          <div className="v2-field">
+          <div className="field">
             <label>{t.pais}</label>
             <input value={form.pais} onChange={(e) => set("pais", e.target.value)} placeholder={t.paisPlaceholder} />
           </div>
-          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
-            <label>{t.correo} <span className="v2-required">*</span></label>
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <label>{t.correo} <span style={{ color: "var(--danger)" }}>*</span></label>
             <input type="email" value={form.correo} onChange={(e) => set("correo", e.target.value)} placeholder={t.correoPlaceholder} />
           </div>
         </div>
 
-        <div className="v2-section-label">Vehículo</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
-          <div className="v2-field">
+        <hr className="seccion-divisor" />
+        <div className="seccion-titulo">{t.seccionVehiculo}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.moto}</label>
             <select value={form.motoId} onChange={(e) => set("motoId", e.target.value)}>
               <option value="">{t.motoPlaceholder}</option>
@@ -275,81 +282,74 @@ export default function FormularioRenta({ onExito }) {
               ))}
             </select>
           </div>
-          {motoSeleccionada && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Unidad</span>
-              <span className="v2-plate">{motoSeleccionada.placa}</span>
-              <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                {motoSeleccionada.modelo} · {motoSeleccionada.tipo === "scooter" ? "Scooter" : "Honda Navi"}
-              </span>
-            </div>
-          )}
         </div>
 
-        <div className="v2-section-label">Entrega y devolución</div>
+        <hr className="seccion-divisor" />
+        <div className="seccion-titulo">{t.seccionEntrega}</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div className="v2-field">
+          <div className="field">
             <label>{t.fechaEntrega}</label>
             <input type="date" value={form.fechaEntrega} onChange={(e) => set("fechaEntrega", e.target.value)} />
           </div>
-          <div className="v2-field">
+          <div className="field">
             <label>{t.horaEntrega}</label>
             <SelectorHora value={form.horaEntrega} onChange={(v) => set("horaEntrega", v)} />
-            <div className="v2-helper">{t.horaEntregaAyuda}</div>
           </div>
-          <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: -6, marginBottom: 4 }}>{t.horaEntregaAyuda}</div>
+          </div>
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.fechaPrevista}</label>
             <input type="date" value={form.fechaPrevista} onChange={(e) => set("fechaPrevista", e.target.value)} style={{ maxWidth: 220 }} />
           </div>
 
           {motoSeleccionada && resultadoTarifa && (
-            <div className="v2-field" style={{ gridColumn: "1 / -1" }}>
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>{t.tarifaCalculada}</label>
-              <div style={{ background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8, padding: "10px 14px" }}>
-                <div className="v2-brand" style={{ fontSize: 20, color: "var(--accent)" }}>
+              <div style={{ background: "#2A2411", border: "1.5px solid var(--amber)", borderRadius: 8, padding: "10px 14px" }}>
+                <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 22, color: "var(--amber)" }}>
                   ${resultadoTarifa.total.toFixed(2)} {tContrato.usd}
                 </div>
               </div>
             </div>
           )}
-        </div>
 
-        <div className="v2-section-label">Detalles</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
-          <div className="v2-field">
+          <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.notas}</label>
             <input value={form.notas} onChange={(e) => set("notas", e.target.value)} placeholder={t.notasPlaceholder} />
           </div>
+        </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8 }}>{t.fotoLabel}</label>
-            <div className="v2-upload">
-              {foto ? (
-                <img src={foto} alt="Carnet subido" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }} />
-              ) : (
-                <div style={{ width: 72, height: 72, borderRadius: 8, background: "var(--surface-2)", border: "1px dashed var(--border)", flexShrink: 0 }} />
-              )}
-              <div>
-                <input ref={fileRef} type="file" accept="image/*" onChange={manejarArchivo} style={{ display: "none" }} />
-                <input ref={camaraRef} type="file" accept="image/*" capture="environment" onChange={manejarArchivo} style={{ display: "none" }} />
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button type="button" className="v2-btn-secondary" onClick={() => fileRef.current?.click()}>
-                    {foto ? t.cambiarFoto : t.subirFoto}
-                  </button>
-                  <button type="button" className="v2-btn-secondary" onClick={() => camaraRef.current?.click()}>
-                    📷 {t.tomarFoto}
-                  </button>
-                </div>
-                {procesandoFoto && <div className="v2-helper">{t.procesandoImagen}</div>}
+        <div style={{ marginTop: 20 }}>
+          <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8 }}>{t.fotoLabel}</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {foto ? (
+              <img src={foto} alt="Carnet subido" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }} />
+            ) : (
+              <div style={{ width: 84, height: 84, borderRadius: 8, background: "var(--panel-2)", border: "1px dashed var(--border-strong)" }} />
+            )}
+            <div>
+              <input ref={fileRef} type="file" accept="image/*" onChange={manejarArchivo} style={{ display: "none" }} />
+              <input ref={camaraRef} type="file" accept="image/*" capture="environment" onChange={manejarArchivo} style={{ display: "none" }} />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className="btn-secondary" onClick={() => fileRef.current?.click()}>
+                  {foto ? t.cambiarFoto : t.subirFoto}
+                </button>
+                <button type="button" className="btn-secondary" onClick={() => camaraRef.current?.click()}>
+                  📷 {t.tomarFoto}
+                </button>
               </div>
+              {procesandoFoto && <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 6 }}>{t.procesandoImagen}</div>}
             </div>
           </div>
         </div>
 
-        {error && <div className="v2-error">{error}</div>}
+        {error && (
+          <div style={{ marginTop: 18, background: "#3A2323", color: "#F3A9A4", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
+        )}
 
         <div style={{ marginTop: 22 }}>
-          <button type="button" onClick={irAFirma} className="v2-btn-primary" style={{ width: "100%" }}>{t.continuar} →</button>
+          <button type="button" onClick={irAFirma} className="btn-primary">{t.continuar}</button>
         </div>
       </div>
     </div>
