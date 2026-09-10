@@ -116,7 +116,7 @@ export default function FormularioRentaEbike({ onExito }) {
     return (
       <div className="card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
-        <h2 style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 20, margin: "0 0 10px" }}>{t.exitoTitulo}</h2>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 20, margin: "0 0 10px" }}>{t.exitoTitulo}</h2>
         <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
         <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>{t.otraRenta}</button>
       </div>
@@ -135,7 +135,7 @@ export default function FormularioRentaEbike({ onExito }) {
           <div className="seccion-titulo">{t.pasoFirma}</div>
         </div>
 
-        <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", background: "#EFEAE0", color: "#1a1a1a", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
+        <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", background: "var(--paper-bg)", color: "var(--paper-text)", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
           <ContratoTextoEbike renta={rentaPreview} ebike={ebikeSeleccionada} t={tContrato} />
         </div>
 
@@ -151,7 +151,7 @@ export default function FormularioRentaEbike({ onExito }) {
           </div>
 
           {error && (
-            <div style={{ marginTop: 18, background: "#3A2323", color: "#F3A9A4", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
+            <div style={{ marginTop: 18, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 11, borderRadius: 10, fontSize: 13.5 }}>{error}</div>
           )}
 
           <div style={{ marginTop: 22, display: "flex", gap: 10 }}>
@@ -192,7 +192,7 @@ export default function FormularioRentaEbike({ onExito }) {
         </div>
 
         {!cargandoEbikes && ebikes.length === 0 && (
-          <div style={{ background: "#3A2E14", color: "#F0C87A", padding: 14, borderRadius: 6, marginBottom: 20, fontSize: 14 }}>
+          <div style={{ background: "var(--warning-bg)", color: "var(--warning-text)", padding: 14, borderRadius: 10, marginBottom: 20, fontSize: 14 }}>
             {t.faltanEbikes}
           </div>
         )}
@@ -254,8 +254,8 @@ export default function FormularioRentaEbike({ onExito }) {
           {resultadoTarifa && (
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>{t.tarifaCalculada}</label>
-              <div style={{ background: "#2A2411", border: "1.5px solid var(--amber)", borderRadius: 8, padding: "10px 14px" }}>
-                <div style={{ fontFamily: "'Oswald', sans-serif", fontWeight: 600, fontSize: 22, color: "var(--amber)" }}>
+              <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
+                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>
                   ${resultadoTarifa.total.toFixed(2)} {tContrato.usd}
                 </div>
               </div>
@@ -269,7 +269,7 @@ export default function FormularioRentaEbike({ onExito }) {
         </div>
 
         {error && (
-          <div style={{ marginTop: 18, background: "#3A2323", color: "#F3A9A4", padding: 11, borderRadius: 6, fontSize: 13.5 }}>{error}</div>
+          <div style={{ marginTop: 18, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 11, borderRadius: 10, fontSize: 13.5 }}>{error}</div>
         )}
 
         <div style={{ marginTop: 22 }}>

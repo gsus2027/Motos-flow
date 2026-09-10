@@ -62,7 +62,7 @@ export default function FirmaPad({ onChange, limpiarTexto }) {
     <div>
       <canvas
         ref={canvasRef}
-        style={{ width: "100%", height: 150, border: "1.5px solid #D8CFBC", borderRadius: 4, background: "#fff", touchAction: "none", cursor: "crosshair", display: "block" }}
+        style={{ width: "100%", height: 150, border: "1.5px solid var(--border-strong)", borderRadius: "var(--radius-input)", background: "#fff", touchAction: "none", cursor: "crosshair", display: "block" }}
         onMouseDown={iniciar}
         onMouseMove={mover}
         onMouseUp={terminar}
