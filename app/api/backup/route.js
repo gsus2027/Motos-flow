@@ -14,7 +14,11 @@ async function autorizado(req) {
     return true;
   }
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  return tokenValido(token);
+  const sesion = await tokenValido(token);
+  if (!sesion) return false;
+  const db = supabaseServer();
+  const { data } = await db.from("staff").select("es_admin").eq("id", sesion.staffId).maybeSingle();
+  return Boolean(data?.es_admin);
 }
 
 export async function GET(req) {

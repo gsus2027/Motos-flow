@@ -48,7 +48,7 @@ export async function POST(req) {
     const nombre = String(body.nombre || "").trim();
     const pin = String(body.pin || "").trim();
     if (!nombre) return NextResponse.json({ error: "Escribe tu nombre." }, { status: 400 });
-    if (pin.length < 4) return NextResponse.json({ error: "El PIN debe tener al menos 4 caracteres." }, { status: 400 });
+    if (pin.length < 6) return NextResponse.json({ error: "El PIN debe tener al menos 6 caracteres." }, { status: 400 });
 
     const salt = generarSalt();
     const pinHash = await hashPin(pin, salt);

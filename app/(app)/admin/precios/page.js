@@ -1,4 +1,5 @@
 "use client";
+import RequiereAdmin from "@/components/RequiereAdmin";
 import { useEffect, useState } from "react";
 
 const CAMPO = { display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-muted)", marginBottom: 5 };
@@ -18,7 +19,7 @@ function Campo({ label, valor, onChange }) {
   );
 }
 
-export default function PantallaPrecios() {
+function PantallaPreciosContenido() {
   const [tarifas, setTarifas] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -122,5 +123,13 @@ export default function PantallaPrecios() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PantallaPrecios() {
+  return (
+    <RequiereAdmin>
+      <PantallaPreciosContenido />
+    </RequiereAdmin>
   );
 }

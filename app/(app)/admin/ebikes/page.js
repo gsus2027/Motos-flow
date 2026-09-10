@@ -1,7 +1,8 @@
 "use client";
+import RequiereAdmin from "@/components/RequiereAdmin";
 import { useEffect, useState } from "react";
 
-export default function FlotaEbikes() {
+function FlotaEbikesContenido() {
   const [ebikes, setEbikes] = useState([]);
   const [rentas, setRentas] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -94,5 +95,13 @@ export default function FlotaEbikes() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function FlotaEbikes() {
+  return (
+    <RequiereAdmin>
+      <FlotaEbikesContenido />
+    </RequiereAdmin>
   );
 }

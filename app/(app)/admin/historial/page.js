@@ -34,9 +34,11 @@ export default function Historial() {
 
   const filtradas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    const base = [...rentas].sort((a, b) => (b.fecha_devolucion_real || "").localeCompare(a.fecha_devolucion_real || ""));
-    if (!q) return base;
-    return base.filter(
+    const ultimas10 = [...rentas]
+      .sort((a, b) => (b.fecha_devolucion_real || "").localeCompare(a.fecha_devolucion_real || ""))
+      .slice(0, 10);
+    if (!q) return ultimas10;
+    return ultimas10.filter(
       (r) =>
         r.cliente?.toLowerCase().includes(q) ||
         r.cedula?.toLowerCase().includes(q) ||
@@ -50,7 +52,7 @@ export default function Historial() {
     <div>
       <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Historial</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>
-        Rentas ya devueltas (motos y ebikes) — busca por cliente, cédula o vehículo para ver su contrato.
+        Las últimas 10 rentas devueltas (motos y ebikes) — busca por cliente, cédula o vehículo para ver su contrato.
       </p>
 
       <div className="field" style={{ maxWidth: 360, marginBottom: 22 }}>

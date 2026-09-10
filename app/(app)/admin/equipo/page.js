@@ -1,4 +1,5 @@
 "use client";
+import RequiereAdmin from "@/components/RequiereAdmin";
 import { useEffect, useState } from "react";
 
 function formatoFecha(iso) {
@@ -6,7 +7,7 @@ function formatoFecha(iso) {
   return new Date(iso).toLocaleDateString("es-PA", { dateStyle: "medium" });
 }
 
-export default function PantallaEquipo() {
+function PantallaEquipoContenido() {
   const [staff, setStaff] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [nombre, setNombre] = useState("");
@@ -35,7 +36,7 @@ export default function PantallaEquipo() {
     setError("");
     setMensaje("");
     if (!nombre.trim()) return setError("Escribe el nombre de la persona.");
-    if (pin.trim().length < 4) return setError("El PIN debe tener al menos 4 caracteres.");
+    if (pin.trim().length < 4) return setError("El PIN debe tener al menos 6 caracteres.");
     setGuardando(true);
     try {
       const res = await fetch("/api/staff", {
@@ -91,7 +92,7 @@ export default function PantallaEquipo() {
     const nuevoPin = (reseteo[s.id] || "").trim();
     setError("");
     setMensaje("");
-    if (nuevoPin.length < 4) return setError(`El nuevo PIN de ${s.nombre} debe tener al menos 4 caracteres.`);
+    if (nuevoPin.length < 4) return setError(`El nuevo PIN de ${s.nombre} debe tener al menos 6 caracteres.`);
     try {
       const res = await fetch("/api/staff", {
         method: "PATCH",
@@ -121,7 +122,7 @@ export default function PantallaEquipo() {
             <input value={nombre} onChange={(e) => setNombre(e.target.value)} />
           </div>
           <div className="field">
-            <label>PIN (mín. 4 caracteres)</label>
+            <label>PIN (mín. 6 caracteres)</label>
             <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} />
           </div>
         </div>
@@ -180,5 +181,13 @@ export default function PantallaEquipo() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PantallaEquipo() {
+  return (
+    <RequiereAdmin>
+      <PantallaEquipoContenido />
+    </RequiereAdmin>
   );
 }

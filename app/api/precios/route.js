@@ -43,11 +43,17 @@ export async function GET() {
   }
 }
 
-// PATCH: solo staff — guarda las tarifas nuevas.
+// PATCH: solo administradores — guarda las tarifas nuevas.
 export async function PATCH(req) {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-  if (!(await tokenValido(token))) {
+  const sesion = await tokenValido(token);
+  if (!sesion) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  }
+  const db0 = supabaseServer();
+  const { data: staffActual } = await db0.from("staff").select("es_admin").eq("id", sesion.staffId).maybeSingle();
+  if (!staffActual?.es_admin) {
+    return NextResponse.json({ error: "Solo un administrador puede cambiar los precios." }, { status: 401 });
   }
   const { exito } = await verificarLimite(limitadorEscritura, ipDelRequest(req));
   if (!exito) {

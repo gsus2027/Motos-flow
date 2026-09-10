@@ -1,4 +1,5 @@
 "use client";
+import RequiereAdmin from "@/components/RequiereAdmin";
 import { useEffect, useState } from "react";
 
 function formatoFecha(iso) {
@@ -14,7 +15,7 @@ function formatoTamano(bytes) {
   return `${(kb / 1024).toFixed(1)} MB`;
 }
 
-export default function PantallaRespaldos() {
+function PantallaRespaldosContenido() {
   const [archivos, setArchivos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [generando, setGenerando] = useState(false);
@@ -112,5 +113,13 @@ export default function PantallaRespaldos() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PantallaRespaldos() {
+  return (
+    <RequiereAdmin>
+      <PantallaRespaldosContenido />
+    </RequiereAdmin>
   );
 }

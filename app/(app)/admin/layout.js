@@ -7,15 +7,17 @@ const NAV = [
   ["/admin", "Panel"],
   ["/admin/nueva-renta", "Nueva renta (moto)"],
   ["/admin/nueva-renta-ebike", "Nueva renta (ebike)"],
-  ["/admin/flota", "Flota de motos"],
-  ["/admin/ebikes", "Flota de ebikes"],
   ["/admin/calendario", "Calendario"],
   ["/admin/historial", "Historial"],
+];
+const NAV_ADMIN = [
+  ["/admin/flota", "Flota de motos"],
+  ["/admin/ebikes", "Flota de ebikes"],
   ["/admin/precios", "Precios"],
   ["/admin/equipo", "Equipo"],
   ["/admin/respaldos", "Respaldos"],
+  ["/admin/reportes", "💰 Dinero"],
 ];
-const NAV_ADMIN = ["/admin/reportes", "Dinero"];
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
@@ -55,9 +57,16 @@ export default function AdminLayout({ children }) {
             </Link>
           ))}
           {staffActual?.es_admin && (
-            <Link href={NAV_ADMIN[0]} style={{ textDecoration: "none" }}>
-              <button className={"nav-btn" + (pathname === NAV_ADMIN[0] ? " active" : "")}>💰 {NAV_ADMIN[1]}</button>
-            </Link>
+            <>
+              <div style={{ margin: "14px 18px 6px", fontSize: 11, fontWeight: 700, color: "var(--sidebar-text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Administración
+              </div>
+              {NAV_ADMIN.map(([href, label]) => (
+                <Link key={href} href={href} style={{ textDecoration: "none" }}>
+                  <button className={"nav-btn" + (pathname === href ? " active" : "")}>{label}</button>
+                </Link>
+              ))}
+            </>
           )}
         </div>
         <div style={{ marginTop: "auto", paddingTop: 20 }}>

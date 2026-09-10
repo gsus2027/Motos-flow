@@ -23,7 +23,7 @@ export default function EntrarPanel() {
 
   async function primerRegistro() {
     if (!nombreNuevo.trim()) return setError("Escribe tu nombre.");
-    if (pin.trim().length < 4) return setError("Usa un PIN de al menos 4 caracteres.");
+    if (pin.trim().length < 4) return setError("Usa un PIN de al menos 6 caracteres.");
     await enviar({ crear: true, nombre: nombreNuevo.trim(), pin: pin.trim() });
   }
 
@@ -95,7 +95,7 @@ export default function EntrarPanel() {
               <input value={nombreNuevo} onChange={(e) => setNombreNuevo(e.target.value)} />
             </div>
             <div className="field" style={{ marginBottom: 16 }}>
-              <label>Crea tu PIN (mín. 4 caracteres)</label>
+              <label>Crea tu PIN (mín. 6 caracteres)</label>
               <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && primerRegistro()} />
             </div>
             <button type="button" className="btn-primary" onClick={primerRegistro} disabled={enviando} style={{ width: "100%" }}>

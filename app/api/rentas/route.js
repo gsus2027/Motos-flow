@@ -11,7 +11,7 @@ function requiereStaff(req) {
 
 // GET: solo staff — trae las rentas con datos del cliente
 export async function GET(req) {
-  if (!requiereStaff(req)) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  if (!(await requiereStaff(req))) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   const db = supabaseServer();
   const { data, error } = await db
     .from("rentas")
@@ -121,7 +121,7 @@ export async function POST(req) {
 
 // PATCH: solo staff — marcar una renta como devuelta
 export async function PATCH(req) {
-  if (!requiereStaff(req)) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  if (!(await requiereStaff(req))) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   const { id } = await req.json();
   if (!id) return NextResponse.json({ error: "Falta el id de la renta." }, { status: 400 });
 

@@ -18,9 +18,9 @@ async function requiereAdmin(req) {
   return Boolean(data?.es_admin);
 }
 
-// GET: solo staff — lista a todo el equipo (sin exponer los PINs, claro)
+// GET: solo administradores — lista a todo el equipo (sin exponer los PINs)
 export async function GET(req) {
-  if (!(await requiereStaff(req))) {
+  if (!(await requiereAdmin(req))) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
   const db = supabaseServer();
@@ -43,7 +43,7 @@ export async function POST(req) {
   const nombreLimpio = String(nombre || "").trim();
   const pinLimpio = String(pin || "").trim();
   if (!nombreLimpio) return NextResponse.json({ error: "Escribe el nombre de la persona." }, { status: 400 });
-  if (pinLimpio.length < 4) return NextResponse.json({ error: "El PIN debe tener al menos 4 caracteres." }, { status: 400 });
+  if (pinLimpio.length < 6) return NextResponse.json({ error: "El PIN debe tener al menos 6 caracteres." }, { status: 400 });
 
   const salt = generarSalt();
   const pinHash = await hashPin(pinLimpio, salt);
@@ -93,7 +93,7 @@ export async function PATCH(req) {
   if (typeof esAdmin === "boolean") cambios.es_admin = esAdmin;
   if (pin) {
     const pinLimpio = String(pin).trim();
-    if (pinLimpio.length < 4) return NextResponse.json({ error: "El PIN debe tener al menos 4 caracteres." }, { status: 400 });
+    if (pinLimpio.length < 6) return NextResponse.json({ error: "El PIN debe tener al menos 6 caracteres." }, { status: 400 });
     cambios.pin_salt = generarSalt();
     cambios.pin_hash = await hashPin(pinLimpio, cambios.pin_salt);
   }
