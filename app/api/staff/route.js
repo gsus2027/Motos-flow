@@ -3,6 +3,8 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME, generarSalt, hashPin } from "@/lib/session";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
+export const dynamic = "force-dynamic";
+
 async function requiereStaff(req) {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   return tokenValido(token);

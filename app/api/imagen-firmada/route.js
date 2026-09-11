@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 // GET: solo staff — genera un link temporal (expira en 5 minutos) para ver
 // una foto de carnet o una firma que están guardadas de forma privada.
 // Sin este paso (y sin haber entrado con el código del panel), nadie puede

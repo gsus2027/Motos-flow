@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 const TABLAS = ["motos", "rentas", "ebikes", "rentas_ebike", "configuracion"];
 
 // Autoriza la solicitud de DOS formas posibles:

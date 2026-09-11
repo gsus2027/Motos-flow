@@ -4,6 +4,14 @@ import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { TARIFAS_POR_DEFECTO, TARIFA_EBIKE_DIA_POR_DEFECTO } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
+// Sin esto, Next.js puede guardar en caché la respuesta de este GET (al no
+// leer cookies ni parámetros de la URL, la trata como si fuera contenido
+// fijo) — y entonces, después de cambiar un precio en el Panel, algunos
+// clientes seguirían viendo el precio viejo hasta que la caché expirara
+// por su cuenta. Esto obliga a consultar la base de datos siempre.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const CLAVE = "tarifas";
 
 function tarifasPorDefecto() {

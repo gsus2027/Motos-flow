@@ -6,6 +6,8 @@ import {
 } from "@/lib/session";
 import { limitadorAuth, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
+export const dynamic = "force-dynamic";
+
 // GET: indica si ya existe al menos un miembro del staff configurado
 // (para saber si mostrar "crear el primer usuario" o "elegir e iniciar
 // sesión"), y quién es el usuario actual si ya hay una sesión válida.

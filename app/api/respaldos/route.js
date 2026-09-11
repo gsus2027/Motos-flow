@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 async function requiereAdmin(req) {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   const sesion = await tokenValido(token);

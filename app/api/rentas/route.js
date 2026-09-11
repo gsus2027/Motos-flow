@@ -4,6 +4,8 @@ import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { calcularTarifa } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
+export const dynamic = "force-dynamic";
+
 function requiereStaff(req) {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   return tokenValido(token);
