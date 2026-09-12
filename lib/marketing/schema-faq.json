@@ -5,7 +5,7 @@
     {
       "@type": "Question",
       "name": "How much does it cost to rent a scooter or moto in Bocas del Toro?",
-      "acceptedAnswer": {"@type":"Answer","text":"At Flow Rentals, a Honda Navi is $30 for a full day or $25 for 4 hours after 2:00 PM. A scooter is $35 for a full day or $30 for 4 hours after 2:00 PM. An e-bike is a flat $20. Ask about special low-season pricing."}
+      "acceptedAnswer": {"@type":"Answer","text":"At Flow Rentals, a Honda Navi is a flat $20. A scooter is a flat $20. An e-bike is a flat $15. Ask about special low-season pricing."}
     },
     {
       "@type": "Question",
