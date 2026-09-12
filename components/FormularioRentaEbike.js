@@ -253,6 +253,31 @@ export default function FormularioRentaEbike({ onExito }) {
               ))}
             </select>
           </div>
+
+          {configExtras?.extras?.length > 0 && (
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <label>{form.idioma === "en" ? "Want to add an extra?" : "¿Quieres agregar un extra?"}</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+                {configExtras.extras.map((ex) => (
+                  <div
+                    key={ex.id}
+                    onClick={() => alternarExtra(ex.id)}
+                    style={{
+                      width: "100%", maxWidth: "100%", boxSizing: "border-box",
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, minWidth: 0, overflowWrap: "break-word" }}>
+                      <input type="checkbox" readOnly checked={extrasSeleccionados.includes(ex.id)} style={{ flexShrink: 0 }} />
+                      <span>{ex.notaEbike || ex.nombre}</span>
+                    </div>
+                    <div style={{ fontSize: 13.5, color: "var(--text-muted)", flexShrink: 0, marginLeft: 10 }}>${Number(ex.precioEbike).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <hr className="seccion-divisor" />
@@ -268,38 +293,19 @@ export default function FormularioRentaEbike({ onExito }) {
           </div>
 
           {resultadoTarifa && (
-            <>
-              {configExtras?.extras?.length > 0 && (
-                <div className="field" style={{ gridColumn: "1 / -1" }}>
-                  <label>{form.idioma === "en" ? "Want to add an extra?" : "¿Quieres agregar un extra?"}</label>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {configExtras.extras.map((ex) => (
-                      <label key={ex.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", width: "100%", boxSizing: "border-box", gap: 10 }}>
-                        <span style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, minWidth: 0, overflowWrap: "break-word" }}>
-                          <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
-                          {ex.notaEbike || ex.nombre}
-                        </span>
-                        <span style={{ fontSize: 13.5, color: "var(--text-muted)", flexShrink: 0 }}>${Number(ex.precioEbike).toFixed(2)}</span>
-                      </label>
-                    ))}
+            <div className="field" style={{ gridColumn: "1 / -1" }}>
+              <label>{t.tarifaCalculada}</label>
+              <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
+                {extrasTotal > 0 && (
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>
+                    {(form.idioma === "en" ? "Rental" : "Renta")}: ${resultadoTarifa.total.toFixed(2)} · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)}
                   </div>
-                </div>
-              )}
-
-              <div className="field" style={{ gridColumn: "1 / -1" }}>
-                <label>{t.tarifaCalculada}</label>
-                <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
-                  {extrasTotal > 0 && (
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>
-                      {(form.idioma === "en" ? "Rental" : "Renta")}: ${resultadoTarifa.total.toFixed(2)} · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)}
-                    </div>
-                  )}
-                  <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>
-                    ${totalConExtras.toFixed(2)} {tContrato.usd}
-                  </div>
+                )}
+                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>
+                  ${totalConExtras.toFixed(2)} {tContrato.usd}
                 </div>
               </div>
-            </>
+            </div>
           )}
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>
