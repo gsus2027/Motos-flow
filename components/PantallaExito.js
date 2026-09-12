@@ -8,6 +8,21 @@ export default function PantallaExito({ idioma, tipo, tituloExito, textoExito, o
   const ruta = RUTA[lang];
   const seguridad = consejosSeguridad(tipo, lang);
 
+  const SeccionResenas = () => (
+    <div className="card" style={{ padding: "24px 22px", marginBottom: 20 }}>
+      <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 6px" }}>{te.resenaTitulo}</h3>
+      <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 16px" }}>{te.resenaTexto}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <a href={RESENAS.google} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+          {te.resenaGoogle}
+        </a>
+        <a href={RESENAS.tripadvisor} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+          {te.resenaTripadvisor}
+        </a>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
       <div className="card" style={{ padding: "36px 28px", textAlign: "center", marginBottom: 20 }}>
@@ -16,18 +31,7 @@ export default function PantallaExito({ idioma, tipo, tituloExito, textoExito, o
         <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: 0 }}>{textoExito}</p>
       </div>
 
-      <div className="card" style={{ padding: "24px 22px", marginBottom: 20 }}>
-        <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 6px" }}>{te.resenaTitulo}</h3>
-        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 16px" }}>{te.resenaTexto}</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <a href={RESENAS.google} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
-            {te.resenaGoogle}
-          </a>
-          <a href={RESENAS.tripadvisor} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
-            {te.resenaTripadvisor}
-          </a>
-        </div>
-      </div>
+      <SeccionResenas />
 
       <div className="card" style={{ padding: "24px 22px", marginBottom: 20 }}>
         <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 14px" }}>{te.seguridadTitulo}</h3>
@@ -56,10 +60,17 @@ export default function PantallaExito({ idioma, tipo, tituloExito, textoExito, o
         </div>
       </div>
 
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <button type="button" className="btn-secondary" onClick={onOtraRenta}>
-          {otraRentaLabel}
-        </button>
+      <div className="card" style={{ padding: "24px 22px" }}>
+        <h3 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 6px" }}>{te.resenaTituloFinal}</h3>
+        <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 16px" }}>{te.resenaTextoFinal}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <a href={RESENAS.google} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+            {te.resenaGoogle}
+          </a>
+          <a href={RESENAS.tripadvisor} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+            {te.resenaTripadvisor}
+          </a>
+        </div>
       </div>
     </div>
   );
