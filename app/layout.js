@@ -9,12 +9,7 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Fuentes de la página pública (marketing) */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-        {/* Fuentes del panel interno (admin, formularios de renta) */}
+        {/* Oswald/Work Sans: solo los usa la pantalla vieja /elegir, que se conserva como respaldo */}
         <link
           href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap"
           rel="stylesheet"
