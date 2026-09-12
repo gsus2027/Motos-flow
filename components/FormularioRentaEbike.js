@@ -274,12 +274,12 @@ export default function FormularioRentaEbike({ onExito }) {
                   <label>{form.idioma === "en" ? "Want to add an extra?" : "¿Quieres agregar un extra?"}</label>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {configExtras.extras.map((ex) => (
-                      <label key={ex.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer" }}>
-                        <span style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
+                      <label key={ex.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", width: "100%", boxSizing: "border-box", gap: 10 }}>
+                        <span style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, minWidth: 0, overflowWrap: "break-word" }}>
                           <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
                           {ex.notaEbike || ex.nombre}
                         </span>
-                        <span style={{ fontSize: 13.5, color: "var(--text-muted)" }}>${Number(ex.precioEbike).toFixed(2)}</span>
+                        <span style={{ fontSize: 13.5, color: "var(--text-muted)", flexShrink: 0 }}>${Number(ex.precioEbike).toFixed(2)}</span>
                       </label>
                     ))}
                   </div>
