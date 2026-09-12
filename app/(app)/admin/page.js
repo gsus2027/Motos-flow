@@ -61,6 +61,7 @@ export default function Panel() {
   const [rentas, setRentas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [contratoVisible, setContratoVisible] = useState(null);
+  const [confirmando, setConfirmando] = useState(null);
 
   async function cargar() {
     setCargando(true);
@@ -80,10 +81,21 @@ export default function Panel() {
 
   useEffect(() => { cargar(); }, []);
 
-  async function marcarDevuelta(r) {
+  async function marcarDevuelta(r, extras) {
     const endpoint = r._tipo === "ebike" ? "/api/rentas-ebike" : "/api/rentas";
-    await fetch(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: r.id }) });
+    const body = { id: r.id };
+    if (extras) body.extras = extras;
+    await fetch(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    setConfirmando(null);
     cargar();
+  }
+
+  function iniciarDevolucion(r) {
+    if (Array.isArray(r.extras) && r.extras.length > 0) {
+      setConfirmando({ renta: r, estado: Object.fromEntries(r.extras.map((e) => [e.id, null])) });
+    } else {
+      marcarDevuelta(r);
+    }
   }
 
   if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
@@ -130,7 +142,7 @@ export default function Panel() {
                 <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
                   Contrato ({r.idioma === "en" ? "EN" : "ES"})
                 </button>
-                <button className="btn-secondary" onClick={() => marcarDevuelta(r)}>Marcar devuelta</button>
+                <button className="btn-secondary" onClick={() => iniciarDevolucion(r)}>Marcar devuelta</button>
               </div>
             </div>
           ))}
@@ -142,6 +154,58 @@ export default function Panel() {
       )}
       {contratoVisible && contratoVisible._tipo === "moto" && (
         <ContratoModal renta={contratoVisible} moto={contratoVisible.motos} onCerrar={() => setContratoVisible(null)} />
+      )}
+
+      {confirmando && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(20,18,15,.6)", zIndex: 40, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "26px 16px", overflowY: "auto" }}>
+          <div className="card" style={{ padding: 24, maxWidth: 420, width: "100%", background: "var(--bg)" }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>{confirmando.renta.cliente} — {confirmando.renta._vehiculo}</div>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 16px" }}>Extras que se llevó — marca cuáles devolvió:</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+              {confirmando.renta.extras.map((ex) => (
+                <div key={ex.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 8 }}>
+                  <span style={{ fontSize: 14 }}>{ex.nombre}</span>
+                  <span style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmando((c) => ({ ...c, estado: { ...c.estado, [ex.id]: true } }))}
+                      style={{
+                        padding: "4px 10px", fontSize: 12, borderRadius: 6, border: "none", cursor: "pointer",
+                        background: confirmando.estado[ex.id] === true ? "#E8F7ED" : "var(--panel-2)",
+                        color: confirmando.estado[ex.id] === true ? "#1E7A38" : "var(--text-muted)",
+                      }}
+                    >
+                      Devuelto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmando((c) => ({ ...c, estado: { ...c.estado, [ex.id]: false } }))}
+                      style={{
+                        padding: "4px 10px", fontSize: 12, borderRadius: 6, border: "none", cursor: "pointer",
+                        background: confirmando.estado[ex.id] === false ? "var(--danger-bg)" : "var(--panel-2)",
+                        color: confirmando.estado[ex.id] === false ? "var(--danger-text)" : "var(--text-muted)",
+                      }}
+                    >
+                      No devuelto
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn-secondary" onClick={() => setConfirmando(null)}>Cancelar</button>
+              <button
+                className="btn-primary"
+                onClick={() => marcarDevuelta(
+                  confirmando.renta,
+                  confirmando.renta.extras.map((ex) => ({ ...ex, devuelto: confirmando.estado[ex.id] === true }))
+                )}
+              >
+                Marcar como devuelta
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

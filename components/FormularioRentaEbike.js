@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { TEXTOS_FORM_EBIKE, TEXTOS_CONTRATO_EBIKE } from "@/lib/textos";
-import { calcularTarifaEbike } from "@/lib/pricing";
+import { calcularTarifaEbike, calcularExtras } from "@/lib/pricing";
 import ContratoTextoEbike from "./ContratoTextoEbike";
 import FirmaPad from "./FirmaPad";
 import PantallaExito from "./PantallaExito";
@@ -15,6 +15,8 @@ export default function FormularioRentaEbike({ onExito }) {
   const [ebikes, setEbikes] = useState([]);
   const [cargandoEbikes, setCargandoEbikes] = useState(true);
   const [tarifas, setTarifas] = useState(null);
+  const [configExtras, setConfigExtras] = useState(null);
+  const [extrasSeleccionados, setExtrasSeleccionados] = useState([]);
   const [paso, setPaso] = useState("datos");
   const [form, setForm] = useState({
     idioma: "es",
@@ -40,11 +42,21 @@ export default function FormularioRentaEbike({ onExito }) {
   const resultadoTarifa = form.fechaPrevista && tarifas
     ? calcularTarifaEbike({ fechaEntrega: form.fechaEntrega, fechaPrevista: form.fechaPrevista, tarifaDia: tarifas.ebikeDia })
     : null;
+  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, configExtras, "ebike");
+  const totalConExtras = resultadoTarifa ? resultadoTarifa.total + extrasTotal : null;
+
+  function alternarExtra(id) {
+    setExtrasSeleccionados((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   useEffect(() => {
     fetch("/api/precios")
       .then((r) => r.json())
       .then((d) => setTarifas(d.tarifas))
+      .catch(() => {});
+    fetch("/api/extras")
+      .then((r) => r.json())
+      .then((d) => setConfigExtras(d))
       .catch(() => {});
     fetch("/api/ebikes?disponibles=1")
       .then((r) => r.json())
@@ -101,6 +113,7 @@ export default function FormularioRentaEbike({ onExito }) {
           notas: form.notas,
           firmaClienteUrl: subeFirma.path,
           aceptoTerminos: true,
+          extrasSeleccionados,
         }),
       }).then((r) => r.json());
       if (res.error) throw new Error(res.error);
@@ -255,14 +268,38 @@ export default function FormularioRentaEbike({ onExito }) {
           </div>
 
           {resultadoTarifa && (
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>{t.tarifaCalculada}</label>
-              <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>
-                  ${resultadoTarifa.total.toFixed(2)} {tContrato.usd}
+            <>
+              {configExtras?.extras?.length > 0 && (
+                <div className="field" style={{ gridColumn: "1 / -1" }}>
+                  <label>{form.idioma === "en" ? "Want to add an extra?" : "¿Quieres agregar un extra?"}</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {configExtras.extras.map((ex) => (
+                      <label key={ex.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer" }}>
+                        <span style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
+                          <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
+                          {ex.notaEbike || ex.nombre}
+                        </span>
+                        <span style={{ fontSize: 13.5, color: "var(--text-muted)" }}>${Number(ex.precioEbike).toFixed(2)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>{t.tarifaCalculada}</label>
+                <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
+                  {extrasTotal > 0 && (
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>
+                      {(form.idioma === "en" ? "Rental" : "Renta")}: ${resultadoTarifa.total.toFixed(2)} · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)}
+                    </div>
+                  )}
+                  <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>
+                    ${totalConExtras.toFixed(2)} {tContrato.usd}
+                  </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>

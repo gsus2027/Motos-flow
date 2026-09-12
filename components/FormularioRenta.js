@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { TEXTOS_FORM, TEXTOS_CONTRATO } from "@/lib/textos";
-import { calcularTarifa } from "@/lib/pricing";
+import { calcularTarifa, calcularExtras } from "@/lib/pricing";
 import { comprimirImagen } from "@/lib/imagen";
 import ContratoTexto from "./ContratoTexto";
 import FirmaPad from "./FirmaPad";
@@ -17,6 +17,9 @@ export default function FormularioRenta({ onExito }) {
   const [motos, setMotos] = useState([]);
   const [cargandoMotos, setCargandoMotos] = useState(true);
   const [tarifas, setTarifas] = useState(null);
+  const [configExtras, setConfigExtras] = useState(null);
+  const [cobertura, setCobertura] = useState("basica");
+  const [extrasSeleccionados, setExtrasSeleccionados] = useState([]);
   const [paso, setPaso] = useState("datos");
   const [form, setForm] = useState({
     idioma: "es",
@@ -53,6 +56,13 @@ export default function FormularioRenta({ onExito }) {
         tarifas,
       })
     : null;
+  const coberturaPrecio = cobertura === "premium" ? Number(configExtras?.coberturaPremium ?? 10) : 0;
+  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, configExtras, "moto");
+  const totalConExtras = resultadoTarifa ? resultadoTarifa.total + coberturaPrecio + extrasTotal : null;
+
+  function alternarExtra(id) {
+    setExtrasSeleccionados((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   useEffect(() => {
     fetch("/api/motos?disponibles=1")
@@ -65,6 +75,10 @@ export default function FormularioRenta({ onExito }) {
     fetch("/api/precios")
       .then((r) => r.json())
       .then((d) => setTarifas(d.tarifas))
+      .catch(() => {});
+    fetch("/api/extras")
+      .then((r) => r.json())
+      .then((d) => setConfigExtras(d))
       .catch(() => {});
   }, []);
 
@@ -140,6 +154,8 @@ export default function FormularioRenta({ onExito }) {
           fotoCarnetUrl: subeFoto.path,
           firmaClienteUrl: subeFirma.path,
           aceptoTerminos: true,
+          cobertura,
+          extrasSeleccionados,
         }),
       }).then((r) => r.json());
       if (res.error) throw new Error(res.error);
@@ -305,14 +321,75 @@ export default function FormularioRenta({ onExito }) {
           </div>
 
           {motoSeleccionada && resultadoTarifa && (
-            <div className="field" style={{ gridColumn: "1 / -1" }}>
-              <label>{t.tarifaCalculada}</label>
-              <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
-                <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>
-                  ${resultadoTarifa.total.toFixed(2)} {tContrato.usd}
+            <>
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>{form.idioma === "en" ? "Coverage" : "Cobertura"}</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    {
+                      val: "basica",
+                      titulo: form.idioma === "en" ? "Basic coverage — included" : "Cobertura básica — incluida",
+                      texto: form.idioma === "en" ? "Up to $2,500 third-party damage, plus cleaning." : "Hasta $2,500 en daños a terceros, más limpieza.",
+                    },
+                    {
+                      val: "premium",
+                      titulo: form.idioma === "en" ? `Premium coverage +$${Number(configExtras?.coberturaPremium ?? 10).toFixed(2)}` : `Cobertura premium +$${Number(configExtras?.coberturaPremium ?? 10).toFixed(2)}`,
+                      texto: form.idioma === "en"
+                        ? "Also covers tires, plastics, engine/transmission, breakdown costs, towing, and lost keys."
+                        : "Cubre además llantas, plásticos, motor/transmisión, averías, grúa y llaves perdidas.",
+                    },
+                  ].map((op) => (
+                    <label
+                      key={op.val}
+                      style={{
+                        display: "flex", gap: 10, alignItems: "flex-start", padding: 12,
+                        border: cobertura === op.val ? "1.5px solid var(--amber)" : "1px solid var(--border)",
+                        borderRadius: 10, cursor: "pointer",
+                      }}
+                    >
+                      <input type="radio" name="cobertura" checked={cobertura === op.val} onChange={() => setCobertura(op.val)} style={{ marginTop: 3 }} />
+                      <span>
+                        <span style={{ display: "block", fontWeight: 600, fontSize: 14 }}>{op.titulo}</span>
+                        <span style={{ display: "block", fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>{op.texto}</span>
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
-            </div>
+
+              {configExtras?.extras?.length > 0 && (
+                <div className="field" style={{ gridColumn: "1 / -1" }}>
+                  <label>{form.idioma === "en" ? "Want to add an extra?" : "¿Quieres agregar un extra?"}</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {configExtras.extras.map((ex) => (
+                      <label key={ex.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer" }}>
+                        <span style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
+                          <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
+                          {ex.notaMoto || ex.nombre}
+                        </span>
+                        <span style={{ fontSize: 13.5, color: "var(--text-muted)" }}>${Number(ex.precioMoto).toFixed(2)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="field" style={{ gridColumn: "1 / -1" }}>
+                <label>{t.tarifaCalculada}</label>
+                <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
+                  {(coberturaPrecio > 0 || extrasTotal > 0) && (
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>
+                      {(form.idioma === "en" ? "Rental" : "Renta")}: ${resultadoTarifa.total.toFixed(2)}
+                      {coberturaPrecio > 0 && <> · {form.idioma === "en" ? "Coverage" : "Cobertura"}: ${coberturaPrecio.toFixed(2)}</>}
+                      {extrasTotal > 0 && <> · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)}</>}
+                    </div>
+                  )}
+                  <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>
+                    ${totalConExtras.toFixed(2)} {tContrato.usd}
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>

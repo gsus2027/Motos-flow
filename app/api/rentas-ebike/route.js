@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
-import { calcularTarifaEbike } from "@/lib/pricing";
+import { calcularTarifaEbike, calcularExtras } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +35,7 @@ export async function POST(req) {
     ebikeId, idioma, cliente, cedula, telefono, hotel, pais, correo,
     fechaEntrega, fechaPrevista, notas,
     fotoCarnetUrl, firmaClienteUrl, aceptoTerminos,
+    extrasSeleccionados,
   } = body;
 
   if (!cliente?.trim() || !cedula?.trim()) {
@@ -72,6 +73,16 @@ export async function POST(req) {
   }
   const resultado = calcularTarifaEbike({ fechaEntrega, fechaPrevista, tarifaDia });
 
+  const { data: configExtras } = await db.from("configuracion").select("valor").eq("clave", "extras_coberturas").maybeSingle();
+  let cfgExtras;
+  try {
+    cfgExtras = configExtras?.valor ? JSON.parse(configExtras.valor) : undefined;
+  } catch {
+    cfgExtras = undefined;
+  }
+  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, cfgExtras, "ebike");
+  const totalFinal = resultado.total + extrasTotal;
+
   const sesion = await tokenValido(req.cookies.get(SESSION_COOKIE_NAME)?.value);
   let atendidoPor = null;
   if (sesion) {
@@ -97,26 +108,37 @@ export async function POST(req) {
       firma_cliente_url: firmaClienteUrl,
       fecha_firma: new Date().toISOString().slice(0, 10),
       acepto_terminos: true,
-      tarifa_total: resultado.total,
+      tarifa_total: totalFinal,
+      extras: extrasDetalle,
       atendido_por: atendidoPor,
     })
     .select()
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ renta: data, tarifa: resultado });
+  return NextResponse.json({ renta: data, tarifa: { ...resultado, total: totalFinal, extrasTotal } });
 }
 
-// PATCH: solo staff — marcar una renta de ebike como devuelta
+// PATCH: solo staff — marcar una renta de ebike como devuelta (y, si
+// tenía extras, guardar cuáles se devolvieron)
 export async function PATCH(req) {
   if (!(await requiereStaff(req))) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  const { id } = await req.json();
+  const { id, extras } = await req.json();
   if (!id) return NextResponse.json({ error: "Falta el id de la renta." }, { status: 400 });
 
   const db = supabaseServer();
+  const actualizacion = { estado: "devuelta", fecha_devolucion_real: new Date().toISOString().slice(0, 10) };
+  if (Array.isArray(extras)) {
+    actualizacion.extras = extras.map((e) => ({
+      id: e.id,
+      nombre: e.nombre,
+      precio: e.precio,
+      devuelto: e.devuelto === true,
+    }));
+  }
   const { data, error } = await db
     .from("rentas_ebike")
-    .update({ estado: "devuelta", fecha_devolucion_real: new Date().toISOString().slice(0, 10) })
+    .update(actualizacion)
     .eq("id", id)
     .select()
     .single();

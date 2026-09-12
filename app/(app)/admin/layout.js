@@ -14,6 +14,7 @@ const NAV_ADMIN = [
   ["/admin/flota", "Flota de motos"],
   ["/admin/ebikes", "Flota de ebikes"],
   ["/admin/precios", "Precios"],
+  ["/admin/extras", "Extras y coberturas"],
   ["/admin/equipo", "Equipo"],
   ["/admin/respaldos", "Respaldos"],
   ["/admin/reportes", "💰 Dinero"],
