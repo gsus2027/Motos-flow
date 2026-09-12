@@ -6,6 +6,7 @@ import { comprimirImagen } from "@/lib/imagen";
 import ContratoTexto from "./ContratoTexto";
 import FirmaPad from "./FirmaPad";
 import SelectorHora from "./SelectorHora";
+import PantallaExito from "./PantallaExito";
 
 function hoyISO() {
   const d = new Date();
@@ -155,14 +156,14 @@ export default function FormularioRenta({ onExito }) {
 
   if (paso === "exito") {
     return (
-      <div className="card" style={{ maxWidth: 640, margin: "0 auto", padding: "40px 30px", textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 10 }}>✅</div>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 20, margin: "0 0 10px" }}>{t.exitoTitulo}</h2>
-        <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "0 0 22px" }}>{t.exitoTexto}</p>
-        <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>
-          {t.otraRenta}
-        </button>
-      </div>
+      <PantallaExito
+        idioma={form.idioma}
+        tipo="moto"
+        tituloExito={t.exitoTitulo}
+        textoExito={t.exitoTexto}
+        otraRentaLabel={t.otraRenta}
+        onOtraRenta={() => window.location.reload()}
+      />
     );
   }
 
