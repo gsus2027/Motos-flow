@@ -3,6 +3,8 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { calcularTarifaEbike, calcularExtras, fechaHoyPanama } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
+import { enviarCorreoContratoFirmado, enviarCorreoDevolucion } from "@/lib/email";
+import { generarPdfContratoEbike } from "@/lib/contratoPdf";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +66,8 @@ export async function POST(req) {
     return NextResponse.json({ error: "Esa ebike ya no está disponible, elige otra." }, { status: 409 });
   }
 
+  const { data: ebike } = await db.from("ebikes").select("numero").eq("id", ebikeId).maybeSingle();
+
   const { data: configTarifas } = await db.from("configuracion").select("valor").eq("clave", "tarifas").maybeSingle();
   let tarifaDia;
   try {
@@ -115,6 +119,20 @@ export async function POST(req) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  try {
+    const pdfBuffer = await generarPdfContratoEbike({ renta: data, ebike, tarifaDia });
+    await enviarCorreoContratoFirmado({
+      paraCorreo: data.correo,
+      nombreCliente: data.cliente,
+      idioma: data.idioma,
+      pdfBuffer,
+      nombreArchivo: `contrato-${(data.id || "").slice(0, 8)}.pdf`,
+    });
+  } catch (err) {
+    console.error("[email] No se pudo enviar el correo de contrato:", err);
+  }
+
   return NextResponse.json({ renta: data, tarifa: { ...resultado, total: totalFinal, extrasTotal } });
 }
 
@@ -142,5 +160,17 @@ export async function PATCH(req) {
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  try {
+    await enviarCorreoDevolucion({
+      paraCorreo: data.correo,
+      nombreCliente: data.cliente,
+      idioma: data.idioma,
+      tipoVehiculo: "ebike",
+    });
+  } catch (err) {
+    console.error("[email] No se pudo enviar el correo de devolución:", err);
+  }
+
   return NextResponse.json({ renta: data });
 }
