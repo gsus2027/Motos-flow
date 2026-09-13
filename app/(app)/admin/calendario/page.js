@@ -119,6 +119,7 @@ export default function Calendario() {
                 <div key={r.id} className="card" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
                   <span style={{ fontSize: 13 }}>{r.motos?.placa}</span>
+                  {r.atendido_por && <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: "auto" }}>Atendió: {r.atendido_por}</span>}
                 </div>
               ))}
             </div>

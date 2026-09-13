@@ -18,6 +18,8 @@ export default function FormularioRenta({ onExito }) {
   const [cargandoMotos, setCargandoMotos] = useState(true);
   const [tarifas, setTarifas] = useState(null);
   const [configExtras, setConfigExtras] = useState(null);
+  const [listaStaff, setListaStaff] = useState([]);
+  const [atendioClienteId, setAtendioClienteId] = useState("");
   const [cobertura, setCobertura] = useState("basica");
   const [extrasSeleccionados, setExtrasSeleccionados] = useState([]);
   const [paso, setPaso] = useState("datos");
@@ -56,8 +58,9 @@ export default function FormularioRenta({ onExito }) {
         tarifas,
       })
     : null;
-  const coberturaPrecio = cobertura === "premium" ? Number(configExtras?.coberturaPremium ?? 10) : 0;
-  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, configExtras, "moto");
+  const diasRenta = resultadoTarifa?.dias || 1;
+  const coberturaPrecio = cobertura === "premium" ? Math.round(Number(configExtras?.coberturaPremium ?? 10) * diasRenta * 100) / 100 : 0;
+  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, configExtras, "moto", diasRenta);
   const totalConExtras = resultadoTarifa ? resultadoTarifa.total + coberturaPrecio + extrasTotal : null;
 
   function alternarExtra(id) {
@@ -79,6 +82,10 @@ export default function FormularioRenta({ onExito }) {
     fetch("/api/extras")
       .then((r) => r.json())
       .then((d) => setConfigExtras(d))
+      .catch(() => {});
+    fetch("/api/auth")
+      .then((r) => r.json())
+      .then((d) => setListaStaff(d.staff || []))
       .catch(() => {});
   }, []);
 
@@ -117,6 +124,7 @@ export default function FormularioRenta({ onExito }) {
   async function confirmarFirma() {
     setError("");
     if (!acepto) return setError(t.errorAcepto);
+    if (!atendioClienteId) return setError(form.idioma === "en" ? "Please select who helped you." : "Por favor selecciona quién te atendió.");
     if (!firma) return setError(t.errorFirma);
 
     setGuardando(true);
@@ -156,6 +164,7 @@ export default function FormularioRenta({ onExito }) {
           aceptoTerminos: true,
           cobertura,
           extrasSeleccionados,
+          atendioClienteId,
         }),
       }).then((r) => r.json());
       if (res.error) throw new Error(res.error);
@@ -197,6 +206,18 @@ export default function FormularioRenta({ onExito }) {
 
         <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", background: "var(--paper-bg)", color: "var(--paper-text)", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
           <ContratoTexto renta={rentaPreview} moto={motoSeleccionada} t={tContrato} />
+        </div>
+
+        <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto 18px" }}>
+          <div className="field">
+            <label>{form.idioma === "en" ? "Who from the team helped you?" : "¿Quién del equipo te atendió?"} <span style={{ color: "var(--danger)" }}>*</span></label>
+            <select value={atendioClienteId} onChange={(e) => setAtendioClienteId(e.target.value)}>
+              <option value="">{form.idioma === "en" ? "Select a name" : "Selecciona un nombre"}</option>
+              {listaStaff.map((s) => (
+                <option key={s.id} value={s.id}>{s.nombre}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto" }}>
@@ -302,37 +323,35 @@ export default function FormularioRenta({ onExito }) {
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{form.idioma === "en" ? "Coverage" : "Cobertura"}</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+            <div style={{ width: "100%" }}>
               {[
                 {
                   val: "basica",
                   titulo: form.idioma === "en" ? "Basic coverage — included" : "Cobertura básica — incluida",
-                  texto: form.idioma === "en" ? "Up to $2,500 third-party damage, plus cleaning." : "Hasta $2,500 en daños a terceros, más limpieza.",
+                  texto: form.idioma === "en" ? "Up to $2,500 for damage to third-party private property, plus cleaning." : "Hasta $2,500 en daños a propiedad privada de terceros, más limpieza.",
                 },
                 {
                   val: "premium",
-                  titulo: form.idioma === "en" ? `Premium coverage +$${Number(configExtras?.coberturaPremium ?? 10).toFixed(2)}` : `Cobertura premium +$${Number(configExtras?.coberturaPremium ?? 10).toFixed(2)}`,
+                  titulo: form.idioma === "en" ? `Premium coverage +$${Number(configExtras?.coberturaPremium ?? 10).toFixed(2)}/day` : `Cobertura premium +$${Number(configExtras?.coberturaPremium ?? 10).toFixed(2)}/día`,
                   texto: form.idioma === "en"
                     ? "Also covers tires, plastics, engine/transmission, breakdown costs, towing, and lost keys."
                     : "Cubre además llantas, plásticos, motor/transmisión, averías, grúa y llaves perdidas.",
                 },
-              ].map((op) => (
+              ].map((op, i) => (
                 <div
                   key={op.val}
                   onClick={() => setCobertura(op.val)}
                   style={{
-                    width: "100%", maxWidth: "100%", boxSizing: "border-box", padding: 12,
+                    width: "100%", boxSizing: "border-box", padding: "10px 12px",
                     border: cobertura === op.val ? "1.5px solid var(--amber)" : "1px solid var(--border)",
-                    borderRadius: 10, cursor: "pointer",
+                    borderRadius: 10, cursor: "pointer", marginTop: i > 0 ? 8 : 0,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "flex-start" }}>
-                    <input type="radio" name="cobertura" checked={cobertura === op.val} onChange={() => setCobertura(op.val)} style={{ marginTop: 3, marginRight: 10 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, overflowWrap: "break-word" }}>{op.titulo}</div>
-                      <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2, overflowWrap: "break-word" }}>{op.texto}</div>
-                    </div>
+                  <div>
+                    <input type="radio" name="cobertura" checked={cobertura === op.val} readOnly style={{ verticalAlign: "middle", marginRight: 8 }} />
+                    <span style={{ fontWeight: 600, fontSize: 14, verticalAlign: "middle" }}>{op.titulo}</span>
                   </div>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 4 }}>{op.texto}</div>
                 </div>
               ))}
             </div>
@@ -341,22 +360,20 @@ export default function FormularioRenta({ onExito }) {
           {configExtras?.extras?.length > 0 && (
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>{form.idioma === "en" ? "Want to add an extra?" : "¿Quieres agregar un extra?"}</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-                {configExtras.extras.map((ex) => (
+              <div style={{ width: "100%" }}>
+                {configExtras.extras.map((ex, i) => (
                   <div
                     key={ex.id}
                     onClick={() => alternarExtra(ex.id)}
                     style={{
-                      width: "100%", maxWidth: "100%", boxSizing: "border-box",
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer",
+                      width: "100%", boxSizing: "border-box",
+                      padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10,
+                      cursor: "pointer", marginTop: i > 0 ? 6 : 0,
                     }}
                   >
-                    <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, minWidth: 0, overflowWrap: "break-word" }}>
-                      <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
-                      <span>{ex.notaMoto || ex.nombre}</span>
-                    </div>
-                    <div style={{ fontSize: 13.5, color: "var(--text-muted)", flexShrink: 0, marginLeft: 10 }}>${Number(ex.precioMoto).toFixed(2)}</div>
+                    <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} readOnly style={{ verticalAlign: "middle", marginRight: 8 }} />
+                    <span style={{ fontSize: 14, verticalAlign: "middle" }}>{ex.notaMoto || ex.nombre}</span>
+                    <span style={{ fontSize: 13.5, color: "var(--text-muted)", float: "right" }}>${Number(ex.precioMoto).toFixed(2)}{form.idioma === "en" ? "/day" : "/día"}</span>
                   </div>
                 ))}
               </div>
@@ -390,8 +407,8 @@ export default function FormularioRenta({ onExito }) {
                 {(coberturaPrecio > 0 || extrasTotal > 0) && (
                   <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>
                     {(form.idioma === "en" ? "Rental" : "Renta")}: ${resultadoTarifa.total.toFixed(2)}
-                    {coberturaPrecio > 0 && <> · {form.idioma === "en" ? "Coverage" : "Cobertura"}: ${coberturaPrecio.toFixed(2)}</>}
-                    {extrasTotal > 0 && <> · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)}</>}
+                    {coberturaPrecio > 0 && <> · {form.idioma === "en" ? "Coverage" : "Cobertura"}: ${coberturaPrecio.toFixed(2)} {diasRenta > 1 ? `(${diasRenta} ${form.idioma === "en" ? "days" : "días"})` : ""}</>}
+                    {extrasTotal > 0 && <> · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)} {diasRenta > 1 ? `(${diasRenta} ${form.idioma === "en" ? "days" : "días"})` : ""}</>}
                   </div>
                 )}
                 <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>

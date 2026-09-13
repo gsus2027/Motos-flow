@@ -16,6 +16,8 @@ export default function FormularioRentaEbike({ onExito }) {
   const [cargandoEbikes, setCargandoEbikes] = useState(true);
   const [tarifas, setTarifas] = useState(null);
   const [configExtras, setConfigExtras] = useState(null);
+  const [listaStaff, setListaStaff] = useState([]);
+  const [atendioClienteId, setAtendioClienteId] = useState("");
   const [extrasSeleccionados, setExtrasSeleccionados] = useState([]);
   const [paso, setPaso] = useState("datos");
   const [form, setForm] = useState({
@@ -42,7 +44,8 @@ export default function FormularioRentaEbike({ onExito }) {
   const resultadoTarifa = form.fechaPrevista && tarifas
     ? calcularTarifaEbike({ fechaEntrega: form.fechaEntrega, fechaPrevista: form.fechaPrevista, tarifaDia: tarifas.ebikeDia })
     : null;
-  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, configExtras, "ebike");
+  const diasRenta = resultadoTarifa?.dias || 1;
+  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, configExtras, "ebike", diasRenta);
   const totalConExtras = resultadoTarifa ? resultadoTarifa.total + extrasTotal : null;
 
   function alternarExtra(id) {
@@ -57,6 +60,10 @@ export default function FormularioRentaEbike({ onExito }) {
     fetch("/api/extras")
       .then((r) => r.json())
       .then((d) => setConfigExtras(d))
+      .catch(() => {});
+    fetch("/api/auth")
+      .then((r) => r.json())
+      .then((d) => setListaStaff(d.staff || []))
       .catch(() => {});
     fetch("/api/ebikes?disponibles=1")
       .then((r) => r.json())
@@ -85,6 +92,7 @@ export default function FormularioRentaEbike({ onExito }) {
   async function confirmarFirma() {
     setError("");
     if (!acepto) return setError(t.errorAcepto);
+    if (!atendioClienteId) return setError(form.idioma === "en" ? "Please select who helped you." : "Por favor selecciona quién te atendió.");
     if (!firma) return setError(t.errorFirma);
 
     setGuardando(true);
@@ -114,6 +122,7 @@ export default function FormularioRentaEbike({ onExito }) {
           firmaClienteUrl: subeFirma.path,
           aceptoTerminos: true,
           extrasSeleccionados,
+          atendioClienteId,
         }),
       }).then((r) => r.json());
       if (res.error) throw new Error(res.error);
@@ -153,6 +162,18 @@ export default function FormularioRentaEbike({ onExito }) {
 
         <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", background: "var(--paper-bg)", color: "var(--paper-text)", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
           <ContratoTextoEbike renta={rentaPreview} ebike={ebikeSeleccionada} t={tContrato} />
+        </div>
+
+        <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto 18px" }}>
+          <div className="field">
+            <label>{form.idioma === "en" ? "Who from the team helped you?" : "¿Quién del equipo te atendió?"} <span style={{ color: "var(--danger)" }}>*</span></label>
+            <select value={atendioClienteId} onChange={(e) => setAtendioClienteId(e.target.value)}>
+              <option value="">{form.idioma === "en" ? "Select a name" : "Selecciona un nombre"}</option>
+              {listaStaff.map((s) => (
+                <option key={s.id} value={s.id}>{s.nombre}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto" }}>
@@ -257,22 +278,20 @@ export default function FormularioRentaEbike({ onExito }) {
           {configExtras?.extras?.length > 0 && (
             <div className="field" style={{ gridColumn: "1 / -1" }}>
               <label>{form.idioma === "en" ? "Want to add an extra?" : "¿Quieres agregar un extra?"}</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-                {configExtras.extras.map((ex) => (
+              <div style={{ width: "100%" }}>
+                {configExtras.extras.map((ex, i) => (
                   <div
                     key={ex.id}
                     onClick={() => alternarExtra(ex.id)}
                     style={{
-                      width: "100%", maxWidth: "100%", boxSizing: "border-box",
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer",
+                      width: "100%", boxSizing: "border-box",
+                      padding: "10px 12px", border: "1px solid var(--border)", borderRadius: 10,
+                      cursor: "pointer", marginTop: i > 0 ? 6 : 0,
                     }}
                   >
-                    <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, minWidth: 0, overflowWrap: "break-word" }}>
-                      <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
-                      <span>{ex.notaEbike || ex.nombre}</span>
-                    </div>
-                    <div style={{ fontSize: 13.5, color: "var(--text-muted)", flexShrink: 0, marginLeft: 10 }}>${Number(ex.precioEbike).toFixed(2)}</div>
+                    <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} readOnly style={{ verticalAlign: "middle", marginRight: 8 }} />
+                    <span style={{ fontSize: 14, verticalAlign: "middle" }}>{ex.notaEbike || ex.nombre}</span>
+                    <span style={{ fontSize: 13.5, color: "var(--text-muted)", float: "right" }}>${Number(ex.precioEbike).toFixed(2)}{form.idioma === "en" ? "/day" : "/día"}</span>
                   </div>
                 ))}
               </div>
@@ -298,7 +317,7 @@ export default function FormularioRentaEbike({ onExito }) {
               <div style={{ background: "var(--highlight-bg)", border: "1.5px solid var(--highlight-border)", borderRadius: 10, padding: "12px 16px" }}>
                 {extrasTotal > 0 && (
                   <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 6 }}>
-                    {(form.idioma === "en" ? "Rental" : "Renta")}: ${resultadoTarifa.total.toFixed(2)} · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)}
+                    {(form.idioma === "en" ? "Rental" : "Renta")}: ${resultadoTarifa.total.toFixed(2)} · {form.idioma === "en" ? "Extras" : "Extras"}: ${extrasTotal.toFixed(2)} {diasRenta > 1 ? `(${diasRenta} ${form.idioma === "en" ? "days" : "días"})` : ""}
                   </div>
                 )}
                 <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 22, color: "var(--highlight-text)" }}>

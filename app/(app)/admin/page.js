@@ -130,6 +130,7 @@ export default function Panel() {
               <div style={{ minWidth: 140 }}>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{r.cliente}</div>
                 <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
+                {r.atendido_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
               </div>
               <EtiquetaTipo tipo={r._tipo} />
               <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>{r._vehiculo}</div>

@@ -35,7 +35,7 @@ export async function POST(req) {
     motoId, idioma, cliente, cedula, telefono, hotel, pais, correo,
     fechaEntrega, horaEntrega, fechaPrevista, notas,
     fotoCarnetUrl, firmaClienteUrl, aceptoTerminos,
-    cobertura, extrasSeleccionados,
+    cobertura, extrasSeleccionados, atendioClienteId,
   } = body;
 
   if (!cliente?.trim() || !cedula?.trim()) {
@@ -90,18 +90,17 @@ export async function POST(req) {
     cfgExtras = undefined;
   }
   const coberturaEsPremium = cobertura === "premium";
-  const coberturaPrecio = coberturaEsPremium ? Number(cfgExtras?.coberturaPremium ?? 10) : 0;
-  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, cfgExtras, "moto");
+  const coberturaPrecio = coberturaEsPremium ? Math.round(Number(cfgExtras?.coberturaPremium ?? 10) * resultado.dias * 100) / 100 : 0;
+  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, cfgExtras, "moto", resultado.dias);
   const totalFinal = resultado.total + coberturaPrecio + extrasTotal;
 
-  // Si quien manda esto tiene sesión de staff activa, se registra quién
-  // atendió la renta (útil para saber quién la creó). Si es un cliente
-  // llenando el formulario público por su cuenta, queda en blanco.
-  const sesion = await tokenValido(req.cookies.get(SESSION_COOKIE_NAME)?.value);
+  // Quién atendió: lo elige el propio cliente en el formulario (obligatorio
+  // ahí). Se valida que ese id exista y esté activo, nunca se confía en el
+  // texto tal cual.
   let atendidoPor = null;
-  if (sesion) {
-    const { data: staffActual } = await db.from("staff").select("nombre").eq("id", sesion.staffId).maybeSingle();
-    atendidoPor = staffActual?.nombre || null;
+  if (atendioClienteId) {
+    const { data: staffElegido } = await db.from("staff").select("nombre").eq("id", atendioClienteId).eq("activo", true).maybeSingle();
+    atendidoPor = staffElegido?.nombre || null;
   }
 
   const { data, error } = await db

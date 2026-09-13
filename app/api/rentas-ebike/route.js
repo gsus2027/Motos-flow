@@ -35,7 +35,7 @@ export async function POST(req) {
     ebikeId, idioma, cliente, cedula, telefono, hotel, pais, correo,
     fechaEntrega, fechaPrevista, notas,
     fotoCarnetUrl, firmaClienteUrl, aceptoTerminos,
-    extrasSeleccionados,
+    extrasSeleccionados, atendioClienteId,
   } = body;
 
   if (!cliente?.trim() || !cedula?.trim()) {
@@ -80,14 +80,13 @@ export async function POST(req) {
   } catch {
     cfgExtras = undefined;
   }
-  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, cfgExtras, "ebike");
+  const { total: extrasTotal, detalle: extrasDetalle } = calcularExtras(extrasSeleccionados, cfgExtras, "ebike", resultado.dias);
   const totalFinal = resultado.total + extrasTotal;
 
-  const sesion = await tokenValido(req.cookies.get(SESSION_COOKIE_NAME)?.value);
   let atendidoPor = null;
-  if (sesion) {
-    const { data: staffActual } = await db.from("staff").select("nombre").eq("id", sesion.staffId).maybeSingle();
-    atendidoPor = staffActual?.nombre || null;
+  if (atendioClienteId) {
+    const { data: staffElegido } = await db.from("staff").select("nombre").eq("id", atendioClienteId).eq("activo", true).maybeSingle();
+    atendidoPor = staffElegido?.nombre || null;
   }
 
   const { data, error } = await db

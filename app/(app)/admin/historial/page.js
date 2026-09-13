@@ -75,6 +75,7 @@ export default function Historial() {
               <div style={{ minWidth: 140 }}>
                 <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{r.cedula}</div>
+                {r.atendido_por && <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
               </div>
               <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", background: "var(--panel-2)", padding: "2px 8px", borderRadius: 3, textTransform: "uppercase" }}>
                 {r._tipo === "ebike" ? "Ebike" : "Moto"}
