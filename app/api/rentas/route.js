@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
-import { calcularTarifa, calcularExtras } from "@/lib/pricing";
+import { calcularTarifa, calcularExtras, fechaHoyPanama } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 
 export const dynamic = "force-dynamic";
@@ -120,7 +120,7 @@ export async function POST(req) {
       notas: notas?.trim() || null,
       foto_carnet_url: fotoCarnetUrl,
       firma_cliente_url: firmaClienteUrl,
-      fecha_firma: new Date().toISOString().slice(0, 10),
+      fecha_firma: fechaHoyPanama(),
       acepto_terminos: true,
       tarifa_total: totalFinal,
       tarifa_regla: resultado.regla,
@@ -144,7 +144,7 @@ export async function PATCH(req) {
   if (!id) return NextResponse.json({ error: "Falta el id de la renta." }, { status: 400 });
 
   const db = supabaseServer();
-  const actualizacion = { estado: "devuelta", fecha_devolucion_real: new Date().toISOString().slice(0, 10) };
+  const actualizacion = { estado: "devuelta", fecha_devolucion_real: fechaHoyPanama() };
   if (Array.isArray(extras)) {
     actualizacion.extras = extras.map((e) => ({
       id: e.id,

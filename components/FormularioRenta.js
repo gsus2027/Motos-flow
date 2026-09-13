@@ -193,7 +193,7 @@ export default function FormularioRenta({ onExito }) {
   }
 
   if (paso === "firma") {
-    const rentaPreview = { ...form, id: "" };
+    const rentaPreview = { ...form, id: "", cobertura_precio: coberturaPrecio, extras: extrasDetalle };
     return (
       <div>
         <div className="card" style={{ padding: 26, maxWidth: 720, margin: "0 auto 18px" }}>

@@ -32,6 +32,9 @@ export default function ContratoTexto({ renta, moto, t }) {
     horaEntrega: renta.horaEntrega,
     fechaPrevista: renta.fechaPrevista,
   });
+  const coberturaPrecio = Number(renta.cobertura_precio) || 0;
+  const extrasTotal = (renta.extras || []).reduce((suma, e) => suma + (Number(e.precio) || 0), 0);
+  const totalFinal = resultado.total + coberturaPrecio + extrasTotal;
 
   return (
     <>
@@ -66,7 +69,14 @@ export default function ContratoTexto({ renta, moto, t }) {
         <Campo label={t.fechaDevolucion} valor={formatoDia(renta.fechaPrevista)} />
       </div>
       <p style={{ margin: "10px 0" }}>{t.tarifaAplicada} {textoRegla(t, resultado)}</p>
-      <p style={{ margin: "6px 0", fontWeight: 700 }}>{t.totalEstimado} ${resultado.total.toFixed(2)} {t.usd}</p>
+      <p style={{ margin: "2px 0" }}>{t.rentaBase || "Renta"}: ${resultado.total.toFixed(2)} {t.usd}</p>
+      {coberturaPrecio > 0 && (
+        <p style={{ margin: "2px 0" }}>{t.coberturaLinea || "Cobertura premium"}: ${coberturaPrecio.toFixed(2)} {t.usd}</p>
+      )}
+      {(renta.extras || []).length > 0 && (renta.extras || []).map((ex, i) => (
+        <p key={i} style={{ margin: "2px 0" }}>{ex.nombre}: ${Number(ex.precio).toFixed(2)} {t.usd}</p>
+      ))}
+      <p style={{ margin: "6px 0", fontWeight: 700 }}>{t.totalEstimado} ${totalFinal.toFixed(2)} {t.usd}</p>
 
       <h2 style={{ fontSize: 15, margin: "22px 0 6px" }}>{t.s2}</h2>
       <p style={{ margin: "6px 0" }}>{t.s2intro}</p>
