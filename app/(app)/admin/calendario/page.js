@@ -89,21 +89,29 @@ export default function Calendario() {
   }
   const delDia = porFecha[diaSel] || { entregas: [], devoluciones: [] };
 
-  function TarjetaRenta({ r, tipo }) {
+  function estadoExtras(extras) {
+    if (!Array.isArray(extras) || extras.length === 0) return { texto: "Sin extras por retornar", color: "var(--text-muted)" };
+    const faltantes = extras.filter((e) => e.devuelto !== true);
+    if (faltantes.length === 0) return { texto: `Extras: ${extras.map((e) => e.nombre).join(", ")}`, color: "var(--text-muted)" };
+    return { texto: `Falta: ${faltantes.map((e) => e.nombre).join(", ")}`, color: "var(--danger)" };
+  }
+
+  function TarjetaRenta({ r }) {
+    const ex = estadoExtras(r.extras);
     return (
       <div className="card" style={{ padding: "12px 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
           <span style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</span>
-          <span style={{ fontSize: 12, background: "var(--panel-2)", padding: "2px 8px", borderRadius: 6 }}>{r._vehiculo}</span>
+          <div style={{ textAlign: "right" }}>
+            <span style={{ fontSize: 12, background: "var(--panel-2)", padding: "2px 8px", borderRadius: 6, display: "inline-block" }}>{r._vehiculo}</span>
+            <div style={{ fontSize: 11.5, color: ex.color, marginTop: 3 }}>{ex.texto}</div>
+          </div>
         </div>
         <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>
           {r.telefono && <div>📞 {r.telefono}</div>}
           {r.hotel && <div>🏨 {r.hotel}</div>}
           {r.atendido_por && <div>👤 Atendió: {r.atendido_por}</div>}
-          <div>
-            🕒 Entrega: {formatoDia(r.fecha_entrega)}{r.hora_entrega ? `, ${r.hora_entrega}` : ""}
-            {tipo === "devolucion" && <> · Debe devolver: {formatoDia(r.fecha_prevista)}</>}
-          </div>
+          <div>🕒 Entrega: {formatoDia(r.fecha_entrega)} · Debe devolver: {formatoDia(r.fecha_prevista)}</div>
         </div>
       </div>
     );
@@ -155,19 +163,19 @@ export default function Calendario() {
             <div className="card" style={{ padding: 20, color: "var(--text-muted)", fontSize: 14 }}>No hay entregas ni devoluciones programadas este día.</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-              {delDia.entregas.length > 0 && (
+              {delDia.devoluciones.length > 0 && (
                 <div>
-                  <div className="seccion-titulo" style={{ fontSize: 12 }}>Se entregan este día ({delDia.entregas.length})</div>
+                  <div className="seccion-titulo" style={{ fontSize: 12 }}>Vehículos que deben retornar el día de hoy: ({delDia.devoluciones.length})</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {delDia.entregas.map((r) => <TarjetaRenta key={`e-${r._tipo}-${r.id}`} r={r} tipo="entrega" />)}
+                    {delDia.devoluciones.map((r) => <TarjetaRenta key={`d-${r._tipo}-${r.id}`} r={r} />)}
                   </div>
                 </div>
               )}
-              {delDia.devoluciones.length > 0 && (
+              {delDia.entregas.length > 0 && (
                 <div>
-                  <div className="seccion-titulo" style={{ fontSize: 12 }}>Deben devolverse este día ({delDia.devoluciones.length})</div>
+                  <div className="seccion-titulo" style={{ fontSize: 12 }}>Vehículos alquilados el día de hoy: ({delDia.entregas.length})</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {delDia.devoluciones.map((r) => <TarjetaRenta key={`d-${r._tipo}-${r.id}`} r={r} tipo="devolucion" />)}
+                    {delDia.entregas.map((r) => <TarjetaRenta key={`e-${r._tipo}-${r.id}`} r={r} />)}
                   </div>
                 </div>
               )}

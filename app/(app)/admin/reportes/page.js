@@ -15,6 +15,12 @@ function formatoFecha(iso) {
   const [a, m, d] = iso.split("-");
   return `${d}/${m}/${a}`;
 }
+function estadoExtras(extras) {
+  if (!Array.isArray(extras) || extras.length === 0) return { texto: "—", color: "var(--text-muted)" };
+  const faltantes = extras.filter((e) => e.devuelto !== true);
+  if (faltantes.length === 0) return { texto: "Devueltos", color: "#1E7A38" };
+  return { texto: `Falta: ${faltantes.map((e) => e.nombre).join(", ")}`, color: "var(--danger)" };
+}
 
 export default function PantallaReportes() {
   const { staffActual, cargando: cargandoStaff } = useStaffActual();
@@ -144,25 +150,30 @@ export default function PantallaReportes() {
           </div>
 
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "110px 110px 1fr 1fr 90px", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid var(--border)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 100px 1fr 90px", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid var(--border)" }}>
               <div>Fecha</div>
               <div>Vehículo</div>
               <div>Cliente</div>
               <div>Atendió</div>
+              <div>Extras</div>
               <div>Monto</div>
             </div>
             {datos.filas.length === 0 ? (
               <div style={{ padding: 20, color: "var(--text-muted)" }}>No hay rentas en este rango con esos filtros.</div>
             ) : (
-              datos.filas.map((f) => (
-                <div key={`${f.tipo}-${f.id}`} style={{ display: "grid", gridTemplateColumns: "110px 110px 1fr 1fr 90px", padding: "12px 18px", fontSize: 13.5, borderBottom: "1px solid var(--border)", alignItems: "center" }}>
-                  <div>{formatoFecha(f.fecha)}</div>
-                  <div>{f.vehiculo}</div>
-                  <div>{f.cliente}</div>
-                  <div>{f.atendidoPor || "—"}</div>
-                  <div style={{ fontWeight: 600 }}>${f.monto.toFixed(2)}</div>
-                </div>
-              ))
+              datos.filas.map((f) => {
+                const ex = estadoExtras(f.extras);
+                return (
+                  <div key={`${f.tipo}-${f.id}`} style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 100px 1fr 90px", padding: "12px 18px", fontSize: 13.5, borderBottom: "1px solid var(--border)", alignItems: "center" }}>
+                    <div>{formatoFecha(f.fecha)}</div>
+                    <div>{f.vehiculo}</div>
+                    <div>{f.cliente}</div>
+                    <div>{f.atendidoPor || "—"}</div>
+                    <div style={{ fontSize: 12.5, color: ex.color }}>{ex.texto}</div>
+                    <div style={{ fontWeight: 600 }}>${f.monto.toFixed(2)}</div>
+                  </div>
+                );
+              })
             )}
           </div>
         </>

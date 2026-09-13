@@ -25,6 +25,12 @@ function estadoRenta(r) {
   if (dif <= 1) return "por vencer";
   return "activa";
 }
+function estadoExtras(extras) {
+  if (!Array.isArray(extras) || extras.length === 0) return { texto: "Sin extras por retornar", color: "var(--text-muted)" };
+  const faltantes = extras.filter((e) => e.devuelto !== true);
+  if (faltantes.length === 0) return { texto: `Extras: ${extras.map((e) => e.nombre).join(", ")}`, color: "var(--text-muted)" };
+  return { texto: `Falta: ${faltantes.map((e) => e.nombre).join(", ")}`, color: "var(--danger)" };
+}
 const ESTILOS = {
   vencida: { bg: "#F6DEDA", fg: "#8E2A1C", dot: "#C0392B" },
   "por vencer": { bg: "#FBEACB", fg: "#8A5A03", dot: "#F0A202" },
@@ -131,6 +137,7 @@ export default function Panel() {
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{r.cliente}</div>
                 <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
                 {r.atendido_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
+                <div style={{ fontSize: 12, color: estadoExtras(r.extras).color }}>{estadoExtras(r.extras).texto}</div>
               </div>
               <EtiquetaTipo tipo={r._tipo} />
               <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>{r._vehiculo}</div>

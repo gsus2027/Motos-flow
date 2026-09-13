@@ -38,7 +38,7 @@ export async function GET(req) {
   if (!tipoFiltro || tipoFiltro === "moto") {
     let q = db
       .from("rentas")
-      .select("id, cliente, fecha_entrega, tarifa_total, atendido_por, moto_id, motos(placa, tipo)")
+      .select("id, cliente, fecha_entrega, tarifa_total, atendido_por, moto_id, extras, motos(placa, tipo)")
       .gte("fecha_entrega", desde)
       .lte("fecha_entrega", hasta);
     if (staff) q = q.eq("atendido_por", staff);
@@ -54,6 +54,7 @@ export async function GET(req) {
         fecha: r.fecha_entrega,
         atendidoPor: r.atendido_por,
         monto: Number(r.tarifa_total) || 0,
+        extras: r.extras || [],
       }))
     );
   }
@@ -61,7 +62,7 @@ export async function GET(req) {
   if (!tipoFiltro || tipoFiltro === "ebike") {
     let q = db
       .from("rentas_ebike")
-      .select("id, cliente, fecha_entrega, tarifa_total, atendido_por, ebike_id, ebikes(numero)")
+      .select("id, cliente, fecha_entrega, tarifa_total, atendido_por, ebike_id, extras, ebikes(numero)")
       .gte("fecha_entrega", desde)
       .lte("fecha_entrega", hasta);
     if (staff) q = q.eq("atendido_por", staff);
@@ -77,6 +78,7 @@ export async function GET(req) {
         fecha: r.fecha_entrega,
         atendidoPor: r.atendido_por,
         monto: Number(r.tarifa_total) || 0,
+        extras: r.extras || [],
       }))
     );
   }
