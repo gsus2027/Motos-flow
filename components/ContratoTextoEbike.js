@@ -17,13 +17,15 @@ function Campo({ label, valor }) {
   );
 }
 
-export default function ContratoTextoEbike({ renta, ebike, t }) {
+export default function ContratoTextoEbike({ renta, ebike, t, tarifaDia }) {
   const resultado = calcularTarifaEbike({
     fechaEntrega: renta.fechaEntrega,
     fechaPrevista: renta.fechaPrevista,
+    tarifaDia,
   });
   const extrasTotal = (renta.extras || []).reduce((suma, e) => suma + (Number(e.precio) || 0), 0);
-  const totalFinal = resultado.total + extrasTotal;
+  const totalFinal = renta.tarifa_total != null ? Number(renta.tarifa_total) : resultado.total + extrasTotal;
+  const rentaBaseMostrar = renta.tarifa_total != null ? totalFinal - extrasTotal : resultado.total;
 
   return (
     <>
@@ -54,7 +56,7 @@ export default function ContratoTextoEbike({ renta, ebike, t }) {
         <Campo label={t.fechaDevolucion} valor={formatoDia(renta.fechaPrevista)} />
       </div>
       <p style={{ margin: "10px 0" }}>{t.tarifaAplicada} {t.reglaEbike(resultado.dias)}</p>
-      <p style={{ margin: "2px 0" }}>{t.rentaBase || "Renta"}: ${resultado.total.toFixed(2)} {t.usd}</p>
+      <p style={{ margin: "2px 0" }}>{t.rentaBase || "Renta"}: ${rentaBaseMostrar.toFixed(2)} {t.usd}</p>
       {(renta.extras || []).length > 0 && (renta.extras || []).map((ex, i) => (
         <p key={i} style={{ margin: "2px 0" }}>{ex.nombre}: ${Number(ex.precio).toFixed(2)} {t.usd}</p>
       ))}

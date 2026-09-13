@@ -161,7 +161,7 @@ export default function FormularioRentaEbike({ onExito }) {
         </div>
 
         <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", background: "var(--paper-bg)", color: "var(--paper-text)", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
-          <ContratoTextoEbike renta={rentaPreview} ebike={ebikeSeleccionada} t={tContrato} />
+          <ContratoTextoEbike renta={rentaPreview} ebike={ebikeSeleccionada} t={tContrato} tarifaDia={tarifas?.ebikeDia} />
         </div>
 
         <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto 18px" }}>

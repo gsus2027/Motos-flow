@@ -25,16 +25,21 @@ function Campo({ label, valor }) {
   );
 }
 
-export default function ContratoTexto({ renta, moto, t }) {
+export default function ContratoTexto({ renta, moto, t, tarifas }) {
   const resultado = calcularTarifa({
     tipoMoto: moto?.tipo,
     fechaEntrega: renta.fechaEntrega,
     horaEntrega: renta.horaEntrega,
     fechaPrevista: renta.fechaPrevista,
+    tarifas,
   });
   const coberturaPrecio = Number(renta.cobertura_precio) || 0;
   const extrasTotal = (renta.extras || []).reduce((suma, e) => suma + (Number(e.precio) || 0), 0);
-  const totalFinal = resultado.total + coberturaPrecio + extrasTotal;
+  // Si ya es una renta guardada de verdad, usamos su total real (el que
+  // efectivamente se cobró) en vez de recalcularlo — así nunca se
+  // desactualiza aunque los precios hayan cambiado desde entonces.
+  const totalFinal = renta.tarifa_total != null ? Number(renta.tarifa_total) : resultado.total + coberturaPrecio + extrasTotal;
+  const rentaBaseMostrar = renta.tarifa_total != null ? totalFinal - coberturaPrecio - extrasTotal : resultado.total;
 
   return (
     <>
@@ -69,7 +74,7 @@ export default function ContratoTexto({ renta, moto, t }) {
         <Campo label={t.fechaDevolucion} valor={formatoDia(renta.fechaPrevista)} />
       </div>
       <p style={{ margin: "10px 0" }}>{t.tarifaAplicada} {textoRegla(t, resultado)}</p>
-      <p style={{ margin: "2px 0" }}>{t.rentaBase || "Renta"}: ${resultado.total.toFixed(2)} {t.usd}</p>
+      <p style={{ margin: "2px 0" }}>{t.rentaBase || "Renta"}: ${rentaBaseMostrar.toFixed(2)} {t.usd}</p>
       {coberturaPrecio > 0 && (
         <p style={{ margin: "2px 0" }}>{t.coberturaLinea || "Cobertura premium"}: ${coberturaPrecio.toFixed(2)} {t.usd}</p>
       )}

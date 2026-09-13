@@ -205,7 +205,7 @@ export default function FormularioRenta({ onExito }) {
         </div>
 
         <div className="card" style={{ padding: "34px 38px", maxWidth: 720, margin: "0 auto 18px", fontFamily: "Georgia, 'Times New Roman', serif", background: "var(--paper-bg)", color: "var(--paper-text)", lineHeight: 1.55, fontSize: 14, maxHeight: 460, overflowY: "auto" }}>
-          <ContratoTexto renta={rentaPreview} moto={motoSeleccionada} t={tContrato} />
+          <ContratoTexto renta={rentaPreview} moto={motoSeleccionada} t={tContrato} tarifas={tarifas} />
         </div>
 
         <div className="card" style={{ padding: 22, maxWidth: 720, margin: "0 auto 18px" }}>
