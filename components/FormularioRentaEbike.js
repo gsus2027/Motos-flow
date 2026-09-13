@@ -269,7 +269,7 @@ export default function FormularioRentaEbike({ onExito }) {
                     }}
                   >
                     <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, minWidth: 0, overflowWrap: "break-word" }}>
-                      <input type="checkbox" readOnly checked={extrasSeleccionados.includes(ex.id)} style={{ flexShrink: 0 }} />
+                      <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
                       <span>{ex.notaEbike || ex.nombre}</span>
                     </div>
                     <div style={{ fontSize: 13.5, color: "var(--text-muted)", flexShrink: 0, marginLeft: 10 }}>${Number(ex.precioEbike).toFixed(2)}</div>

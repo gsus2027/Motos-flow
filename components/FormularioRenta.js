@@ -327,8 +327,8 @@ export default function FormularioRenta({ onExito }) {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start" }}>
-                    <input type="radio" name="cobertura" readOnly checked={cobertura === op.val} style={{ marginTop: 3, marginRight: 10, flexShrink: 0 }} />
-                    <div style={{ minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
+                    <input type="radio" name="cobertura" checked={cobertura === op.val} onChange={() => setCobertura(op.val)} style={{ marginTop: 3, marginRight: 10 }} />
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 14, overflowWrap: "break-word" }}>{op.titulo}</div>
                       <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2, overflowWrap: "break-word" }}>{op.texto}</div>
                     </div>
@@ -353,7 +353,7 @@ export default function FormularioRenta({ onExito }) {
                     }}
                   >
                     <div style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 14, minWidth: 0, overflowWrap: "break-word" }}>
-                      <input type="checkbox" readOnly checked={extrasSeleccionados.includes(ex.id)} style={{ flexShrink: 0 }} />
+                      <input type="checkbox" checked={extrasSeleccionados.includes(ex.id)} onChange={() => alternarExtra(ex.id)} />
                       <span>{ex.notaMoto || ex.nombre}</span>
                     </div>
                     <div style={{ fontSize: 13.5, color: "var(--text-muted)", flexShrink: 0, marginLeft: 10 }}>${Number(ex.precioMoto).toFixed(2)}</div>
