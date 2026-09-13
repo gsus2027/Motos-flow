@@ -4,7 +4,6 @@ import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { calcularTarifaEbike, calcularExtras, fechaHoyPanama } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 import { enviarCorreoContratoFirmado, enviarCorreoDevolucion } from "@/lib/email";
-import { generarPdfContratoEbike } from "@/lib/contratoPdf";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -122,13 +121,14 @@ export async function POST(req) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   try {
-    const pdfBuffer = await generarPdfContratoEbike({ renta: data, ebike, tarifaDia });
     await enviarCorreoContratoFirmado({
       paraCorreo: data.correo,
       nombreCliente: data.cliente,
       idioma: data.idioma,
-      pdfBuffer,
-      nombreArchivo: `contrato-${(data.id || "").slice(0, 8)}.pdf`,
+      tipoVehiculo: "ebike",
+      renta: data,
+      ebike,
+      tarifaDia,
     });
   } catch (err) {
     console.error("[email] No se pudo enviar el correo de contrato:", err);

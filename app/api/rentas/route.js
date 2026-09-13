@@ -4,7 +4,6 @@ import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { calcularTarifa, calcularExtras, fechaHoyPanama } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 import { enviarCorreoContratoFirmado, enviarCorreoDevolucion } from "@/lib/email";
-import { generarPdfContratoMoto } from "@/lib/contratoPdf";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -141,13 +140,14 @@ export async function POST(req) {
   // envío (o Resend no está configurado todavía), solo se registra en
   // consola y la renta queda guardada de todas formas.
   try {
-    const pdfBuffer = await generarPdfContratoMoto({ renta: data, moto, tarifas });
     await enviarCorreoContratoFirmado({
       paraCorreo: data.correo,
       nombreCliente: data.cliente,
       idioma: data.idioma,
-      pdfBuffer,
-      nombreArchivo: `contrato-${(data.id || "").slice(0, 8)}.pdf`,
+      tipoVehiculo: "moto",
+      renta: data,
+      moto,
+      tarifas,
     });
   } catch (err) {
     console.error("[email] No se pudo enviar el correo de contrato:", err);
