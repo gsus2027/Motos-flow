@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useStaffActual } from "@/lib/staffContext";
 
 function hoyISO() {
   const d = new Date();
@@ -16,7 +17,7 @@ function formatoFecha(iso) {
 }
 
 export default function PantallaReportes() {
-  const [staffActual, setStaffActual] = useState(null);
+  const { staffActual, cargando: cargandoStaff } = useStaffActual();
   const [staffList, setStaffList] = useState([]);
   const [motos, setMotos] = useState([]);
   const [ebikes, setEbikes] = useState([]);
@@ -31,7 +32,6 @@ export default function PantallaReportes() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/auth").then((r) => r.json()).then((d) => setStaffActual(d.staffActual || null));
     fetch("/api/staff").then((r) => r.json()).then((d) => setStaffList(d.staff || []));
     fetch("/api/motos").then((r) => r.json()).then((d) => setMotos(d.motos || []));
     fetch("/api/ebikes").then((r) => r.json()).then((d) => setEbikes(d.ebikes || []));
@@ -61,10 +61,10 @@ export default function PantallaReportes() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffActual]);
 
-  if (staffActual === null) {
+  if (cargandoStaff) {
     return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
   }
-  if (!staffActual.es_admin) {
+  if (!staffActual?.es_admin) {
     return (
       <div className="card" style={{ padding: 24, maxWidth: 520 }}>
         Esta sección es solo para administradores. Si crees que deberías tener acceso, pídele a un administrador que te dé el rol desde &quot;Equipo&quot;.

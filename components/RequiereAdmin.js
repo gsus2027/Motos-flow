@@ -1,21 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useStaffActual } from "@/lib/staffContext";
 
 // Envuelve una pantalla del panel que debe verse SOLO si el usuario
-// conectado es administrador. Si alguien sin ese rol entra directo por
-// la URL (sin pasar por un link, que ya está oculto), esto lo bloquea
-// también aquí — no basta con esconder el link en la barra lateral.
+// conectado es administrador. Usa la sesión que el layout del panel ya
+// cargó una vez (en vez de pedirla otra vez aquí), para no duplicar
+// peticiones de red y que las pantallas carguen más rápido.
 export default function RequiereAdmin({ children }) {
-  const [staffActual, setStaffActual] = useState(null);
+  const { staffActual, cargando } = useStaffActual();
 
-  useEffect(() => {
-    fetch("/api/auth")
-      .then((r) => r.json())
-      .then((d) => setStaffActual(d.staffActual || null))
-      .catch(() => setStaffActual(false));
-  }, []);
-
-  if (staffActual === null) {
+  if (cargando) {
     return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
   }
   if (!staffActual?.es_admin) {

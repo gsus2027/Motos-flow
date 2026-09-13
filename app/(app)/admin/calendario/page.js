@@ -35,17 +35,35 @@ export default function Calendario() {
   const [diaSel, setDiaSel] = useState(hoyISO());
 
   useEffect(() => {
-    fetch("/api/rentas").then((r) => r.json()).then((d) => {
-      setRentas((d.rentas || []).filter((r) => r.estado !== "devuelta"));
+    Promise.all([
+      fetch("/api/rentas").then((r) => r.json()),
+      fetch("/api/rentas-ebike").then((r) => r.json()),
+    ]).then(([rm, re]) => {
+      const motos = (rm.rentas || [])
+        .filter((r) => r.estado !== "devuelta")
+        .map((r) => ({ ...r, _tipo: "moto", _vehiculo: r.motos ? `${r.motos.placa} — ${r.motos.modelo}` : "—" }));
+      const ebikes = (re.rentas || [])
+        .filter((r) => r.estado !== "devuelta")
+        .map((r) => ({ ...r, _tipo: "ebike", _vehiculo: r.ebikes ? `Ebike ${r.ebikes.numero}` : "—" }));
+      setRentas([...motos, ...ebikes]);
       setCargando(false);
     });
   }, []);
 
+  // Cada renta activa aparece en el calendario en 2 fechas: el día que se
+  // entregó (para ver qué se está recogiendo hoy) y el día que debe
+  // devolverse (para ver qué vence hoy).
   const porFecha = useMemo(() => {
     const map = {};
     rentas.forEach((r) => {
-      if (!map[r.fecha_prevista]) map[r.fecha_prevista] = [];
-      map[r.fecha_prevista].push(r);
+      if (r.fecha_entrega) {
+        if (!map[r.fecha_entrega]) map[r.fecha_entrega] = { entregas: [], devoluciones: [] };
+        map[r.fecha_entrega].entregas.push(r);
+      }
+      if (r.fecha_prevista) {
+        if (!map[r.fecha_prevista]) map[r.fecha_prevista] = { entregas: [], devoluciones: [] };
+        map[r.fecha_prevista].devoluciones.push(r);
+      }
     });
     return map;
   }, [rentas]);
@@ -69,15 +87,35 @@ export default function Calendario() {
   function isoDe(d) {
     return `${anio}-${String(mes + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   }
-  const rentasDelDia = porFecha[diaSel] || [];
+  const delDia = porFecha[diaSel] || { entregas: [], devoluciones: [] };
+
+  function TarjetaRenta({ r, tipo }) {
+    return (
+      <div className="card" style={{ padding: "12px 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+          <span style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</span>
+          <span style={{ fontSize: 12, background: "var(--panel-2)", padding: "2px 8px", borderRadius: 6 }}>{r._vehiculo}</span>
+        </div>
+        <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.7 }}>
+          {r.telefono && <div>📞 {r.telefono}</div>}
+          {r.hotel && <div>🏨 {r.hotel}</div>}
+          {r.atendido_por && <div>👤 Atendió: {r.atendido_por}</div>}
+          <div>
+            🕒 Entrega: {formatoDia(r.fecha_entrega)}{r.hora_entrega ? `, ${r.hora_entrega}` : ""}
+            {tipo === "devolucion" && <> · Debe devolver: {formatoDia(r.fecha_prevista)}</>}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Calendario</h1>
-      <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Vista de las fechas de devolución por mes.</p>
+      <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Entregas y devoluciones programadas por mes (motos y ebikes).</p>
 
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-        <div className="card" style={{ padding: 20, width: 340 }}>
+        <div className="card" style={{ padding: 20, width: 340, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <button className="btn-secondary" onClick={() => cambiarMes(-1)} style={{ padding: "5px 11px" }}>‹</button>
             <div style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16, textTransform: "capitalize" }}>{MESES[mes]} {anio}</div>
@@ -90,10 +128,11 @@ export default function Calendario() {
             {celdas.map((d, i) => {
               if (!d) return <div key={i} />;
               const iso = isoDe(d);
-              const items = porFecha[iso] || [];
+              const info = porFecha[iso] || { entregas: [], devoluciones: [] };
+              const total = info.entregas.length + info.devoluciones.length;
               const esHoy = iso === hoyISO();
               const seleccionado = iso === diaSel;
-              const tieneVencida = items.some((r) => estadoRenta(r) === "vencida");
+              const tieneVencida = info.devoluciones.some((r) => estadoRenta(r) === "vencida");
               return (
                 <button key={i} onClick={() => setDiaSel(iso)} style={{
                   aspectRatio: "1",
@@ -102,26 +141,36 @@ export default function Calendario() {
                   alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: seleccionado ? 700 : 500,
                 }}>
                   {d}
-                  {items.length > 0 && <span style={{ width: 5, height: 5, borderRadius: "50%", background: tieneVencida ? "#C0392B" : "#F0A202", marginTop: 2 }} />}
+                  {total > 0 && <span style={{ width: 5, height: 5, borderRadius: "50%", background: tieneVencida ? "#C0392B" : "#F0A202", marginTop: 2 }} />}
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div style={{ flex: 1, minWidth: 260 }}>
+        <div style={{ flex: 1, minWidth: 280 }}>
           <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 16, margin: "0 0 12px" }}>{formatoDia(diaSel)}</h2>
-          {rentasDelDia.length === 0 ? (
-            <div className="card" style={{ padding: 20, color: "var(--text-muted)", fontSize: 14 }}>No hay devoluciones programadas este día.</div>
+
+          {delDia.entregas.length === 0 && delDia.devoluciones.length === 0 ? (
+            <div className="card" style={{ padding: 20, color: "var(--text-muted)", fontSize: 14 }}>No hay entregas ni devoluciones programadas este día.</div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {rentasDelDia.map((r) => (
-                <div key={r.id} className="card" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.cliente}</div>
-                  <span style={{ fontSize: 13 }}>{r.motos?.placa}</span>
-                  {r.atendido_por && <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: "auto" }}>Atendió: {r.atendido_por}</span>}
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              {delDia.entregas.length > 0 && (
+                <div>
+                  <div className="seccion-titulo" style={{ fontSize: 12 }}>Se entregan este día ({delDia.entregas.length})</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {delDia.entregas.map((r) => <TarjetaRenta key={`e-${r._tipo}-${r.id}`} r={r} tipo="entrega" />)}
+                  </div>
                 </div>
-              ))}
+              )}
+              {delDia.devoluciones.length > 0 && (
+                <div>
+                  <div className="seccion-titulo" style={{ fontSize: 12 }}>Deben devolverse este día ({delDia.devoluciones.length})</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {delDia.devoluciones.map((r) => <TarjetaRenta key={`d-${r._tipo}-${r.id}`} r={r} tipo="devolucion" />)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

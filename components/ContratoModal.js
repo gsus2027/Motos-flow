@@ -23,6 +23,9 @@ export default function ContratoModal({ renta, moto, onCerrar }) {
     fechaEntrega: renta.fecha_entrega,
     horaEntrega: renta.hora_entrega,
     fechaPrevista: renta.fecha_prevista,
+    tarifa_total: renta.tarifa_total,
+    cobertura_precio: renta.cobertura_precio,
+    extras: renta.extras,
   };
 
   return (

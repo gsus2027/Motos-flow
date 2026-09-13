@@ -22,6 +22,8 @@ export default function ContratoModalEbike({ renta, ebike, onCerrar }) {
     correo: renta.correo,
     fechaEntrega: renta.fecha_entrega,
     fechaPrevista: renta.fecha_prevista,
+    tarifa_total: renta.tarifa_total,
+    extras: renta.extras,
   };
 
   return (

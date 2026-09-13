@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { StaffProvider } from "@/lib/staffContext";
 
 const NAV = [
   ["/admin", "Panel"],
@@ -24,12 +25,14 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [staffActual, setStaffActual] = useState(null);
+  const [cargandoStaff, setCargandoStaff] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth")
       .then((r) => r.json())
       .then((d) => setStaffActual(d.staffActual || null))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setCargandoStaff(false));
   }, []);
 
   async function bloquear() {
@@ -74,7 +77,9 @@ export default function AdminLayout({ children }) {
           <button className="nav-btn" onClick={bloquear}>🔒 Bloquear panel</button>
         </div>
       </div>
-      <div style={{ flex: 1, padding: "36px 40px", maxWidth: 1000 }}>{children}</div>
+      <div style={{ flex: 1, padding: "36px 40px", maxWidth: 1000 }}>
+        <StaffProvider value={{ staffActual, cargando: cargandoStaff }}>{children}</StaffProvider>
+      </div>
     </div>
   );
 }
