@@ -7,6 +7,7 @@ import { enviarCorreoContratoFirmado, enviarCorreoDevolucion } from "@/lib/email
 import { generarPdfContratoEbike } from "@/lib/contratoPdf";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function requiereStaff(req) {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
