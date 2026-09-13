@@ -25,6 +25,7 @@ export async function GET(req) {
   const hasta = params.get("hasta");
   const staff = params.get("staff") || "";
   const vehiculo = params.get("vehiculo") || ""; // formato: "moto:<id>" o "ebike:<id>"
+  const pais = params.get("pais") || "";
 
   if (!desde || !hasta) {
     return NextResponse.json({ error: "Faltan las fechas del rango." }, { status: 400 });
@@ -38,11 +39,12 @@ export async function GET(req) {
   if (!tipoFiltro || tipoFiltro === "moto") {
     let q = db
       .from("rentas")
-      .select("id, cliente, fecha_entrega, tarifa_total, atendido_por, moto_id, extras, motos(placa, tipo)")
+      .select("*, motos(placa, modelo, tipo)")
       .gte("fecha_entrega", desde)
       .lte("fecha_entrega", hasta);
     if (staff) q = q.eq("atendido_por", staff);
     if (tipoFiltro === "moto" && idFiltro) q = q.eq("moto_id", idFiltro);
+    if (pais) q = q.eq("pais", pais);
     const { data, error } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     filas = filas.concat(
@@ -55,6 +57,11 @@ export async function GET(req) {
         atendidoPor: r.atendido_por,
         monto: Number(r.tarifa_total) || 0,
         extras: r.extras || [],
+        pais: r.pais || null,
+        hora: r.hora_entrega || null,
+        fechaRetorno: r.fecha_prevista || null,
+        renta: r,
+        vehiculoObj: r.motos,
       }))
     );
   }
@@ -62,11 +69,12 @@ export async function GET(req) {
   if (!tipoFiltro || tipoFiltro === "ebike") {
     let q = db
       .from("rentas_ebike")
-      .select("id, cliente, fecha_entrega, tarifa_total, atendido_por, ebike_id, extras, ebikes(numero)")
+      .select("*, ebikes(numero)")
       .gte("fecha_entrega", desde)
       .lte("fecha_entrega", hasta);
     if (staff) q = q.eq("atendido_por", staff);
     if (tipoFiltro === "ebike" && idFiltro) q = q.eq("ebike_id", idFiltro);
+    if (pais) q = q.eq("pais", pais);
     const { data, error } = await q;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     filas = filas.concat(
@@ -79,6 +87,11 @@ export async function GET(req) {
         atendidoPor: r.atendido_por,
         monto: Number(r.tarifa_total) || 0,
         extras: r.extras || [],
+        pais: r.pais || null,
+        hora: null,
+        fechaRetorno: r.fecha_prevista || null,
+        renta: r,
+        vehiculoObj: r.ebikes,
       }))
     );
   }

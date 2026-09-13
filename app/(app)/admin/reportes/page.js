@@ -1,6 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStaffActual } from "@/lib/staffContext";
+import ContratoModal from "@/components/ContratoModal";
+import ContratoModalEbike from "@/components/ContratoModalEbike";
 
 function hoyISO() {
   const d = new Date();
@@ -12,6 +14,7 @@ function haceUnaSemanaISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function formatoFecha(iso) {
+  if (!iso) return "—";
   const [a, m, d] = iso.split("-");
   return `${d}/${m}/${a}`;
 }
@@ -32,10 +35,12 @@ export default function PantallaReportes() {
   const [hasta, setHasta] = useState(hoyISO());
   const [filtroStaff, setFiltroStaff] = useState("");
   const [filtroVehiculo, setFiltroVehiculo] = useState("");
+  const [filtroPais, setFiltroPais] = useState("");
 
   const [datos, setDatos] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
+  const [contratoVisible, setContratoVisible] = useState(null);
 
   useEffect(() => {
     fetch("/api/staff").then((r) => r.json()).then((d) => setStaffList(d.staff || []));
@@ -49,6 +54,7 @@ export default function PantallaReportes() {
     const params = new URLSearchParams({ desde, hasta });
     if (filtroStaff) params.set("staff", filtroStaff);
     if (filtroVehiculo) params.set("vehiculo", filtroVehiculo);
+    if (filtroPais) params.set("pais", filtroPais);
     fetch(`/api/reportes?${params.toString()}`)
       .then((r) => r.json())
       .then((d) => {
@@ -67,6 +73,12 @@ export default function PantallaReportes() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffActual]);
 
+  const paisesDisponibles = useMemo(() => {
+    if (!datos?.filas) return [];
+    const set = new Set(datos.filas.map((f) => f.pais).filter(Boolean));
+    return [...set].sort();
+  }, [datos]);
+
   if (cargandoStaff) {
     return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
   }
@@ -82,11 +94,11 @@ export default function PantallaReportes() {
     <div>
       <h1 style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 600, margin: 0 }}>Dinero</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 22px" }}>
-        Ingresos por renta, con filtros de fecha, de quién la atendió, y de vehículo.
+        Ingresos por renta, con filtros de fecha, de quién la atendió, de vehículo, y de país.
       </p>
 
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, alignItems: "end" }}>
           <div className="field">
             <label>Desde</label>
             <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
@@ -120,6 +132,15 @@ export default function PantallaReportes() {
               </optgroup>
             </select>
           </div>
+          <div className="field">
+            <label>País</label>
+            <select value={filtroPais} onChange={(e) => setFiltroPais(e.target.value)}>
+              <option value="">Todos</option>
+              {paisesDisponibles.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div style={{ marginTop: 16 }}>
           <button type="button" className="btn-primary" onClick={buscar} disabled={cargando}>
@@ -149,34 +170,57 @@ export default function PantallaReportes() {
             </div>
           </div>
 
-          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 100px 1fr 90px", padding: "12px 18px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", borderBottom: "1px solid var(--border)" }}>
-              <div>Fecha</div>
-              <div>Vehículo</div>
-              <div>Cliente</div>
-              <div>Atendió</div>
-              <div>Extras</div>
-              <div>Monto</div>
-            </div>
-            {datos.filas.length === 0 ? (
-              <div style={{ padding: 20, color: "var(--text-muted)" }}>No hay rentas en este rango con esos filtros.</div>
-            ) : (
-              datos.filas.map((f) => {
-                const ex = estadoExtras(f.extras);
-                return (
-                  <div key={`${f.tipo}-${f.id}`} style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 100px 1fr 90px", padding: "12px 18px", fontSize: 13.5, borderBottom: "1px solid var(--border)", alignItems: "center" }}>
-                    <div>{formatoFecha(f.fecha)}</div>
-                    <div>{f.vehiculo}</div>
-                    <div>{f.cliente}</div>
-                    <div>{f.atendidoPor || "—"}</div>
-                    <div style={{ fontSize: 12.5, color: ex.color }}>{ex.texto}</div>
-                    <div style={{ fontWeight: 600 }}>${f.monto.toFixed(2)}</div>
-                  </div>
-                );
-              })
-            )}
+          <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 980 }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12 }}>
+                  <th style={{ padding: "10px 12px" }}>Fecha</th>
+                  <th style={{ padding: "10px 12px" }}>Hora</th>
+                  <th style={{ padding: "10px 12px" }}>Vehículo</th>
+                  <th style={{ padding: "10px 12px" }}>País</th>
+                  <th style={{ padding: "10px 12px" }}>Cliente</th>
+                  <th style={{ padding: "10px 12px" }}>Atendió</th>
+                  <th style={{ padding: "10px 12px" }}>Retorno</th>
+                  <th style={{ padding: "10px 12px" }}>Extras</th>
+                  <th style={{ padding: "10px 12px" }}>Monto</th>
+                  <th style={{ padding: "10px 12px" }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {datos.filas.length === 0 ? (
+                  <tr><td colSpan={10} style={{ padding: 20, color: "var(--text-muted)" }}>No hay rentas en este rango con esos filtros.</td></tr>
+                ) : (
+                  datos.filas.map((f) => {
+                    const ex = estadoExtras(f.extras);
+                    return (
+                      <tr key={`${f.tipo}-${f.id}`} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "10px 12px" }}>{formatoFecha(f.fecha)}</td>
+                        <td style={{ padding: "10px 12px" }}>{f.hora || "—"}</td>
+                        <td style={{ padding: "10px 12px" }}>{f.vehiculo}</td>
+                        <td style={{ padding: "10px 12px" }}>{f.pais || "—"}</td>
+                        <td style={{ padding: "10px 12px" }}>{f.cliente}</td>
+                        <td style={{ padding: "10px 12px" }}>{f.atendidoPor || "—"}</td>
+                        <td style={{ padding: "10px 12px" }}>{formatoFecha(f.fechaRetorno)}</td>
+                        <td style={{ padding: "10px 12px", fontSize: 12.5, color: ex.color }}>{ex.texto}</td>
+                        <td style={{ padding: "10px 12px", fontWeight: 600 }}>${f.monto.toFixed(2)}</td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => setContratoVisible(f)}>Ver contrato</button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </>
+      )}
+
+      {contratoVisible && contratoVisible.tipo === "ebike" && (
+        <ContratoModalEbike renta={contratoVisible.renta} ebike={contratoVisible.vehiculoObj} onCerrar={() => setContratoVisible(null)} />
+      )}
+      {contratoVisible && contratoVisible.tipo === "moto" && (
+        <ContratoModal renta={contratoVisible.renta} moto={contratoVisible.vehiculoObj} onCerrar={() => setContratoVisible(null)} />
       )}
     </div>
   );
