@@ -68,6 +68,7 @@ export default function Panel() {
   const [cargando, setCargando] = useState(true);
   const [contratoVisible, setContratoVisible] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
+  const [cambiandoMoto, setCambiandoMoto] = useState(null); // { renta, motosDisponibles, elegida, error, guardando }
 
   async function cargar() {
     setCargando(true);
@@ -102,6 +103,30 @@ export default function Panel() {
     } else {
       marcarDevuelta(r);
     }
+  }
+
+  // Cambiar la moto asignada a una renta activa (por ejemplo, si la
+  // moto entregada no arranca). Solo aplica a rentas de moto, no ebike.
+  async function abrirCambioMoto(r) {
+    setCambiandoMoto({ renta: r, motosDisponibles: null, elegida: "", error: "", guardando: false });
+    const res = await fetch("/api/motos?disponibles=1").then((x) => x.json());
+    setCambiandoMoto((c) => (c && c.renta.id === r.id ? { ...c, motosDisponibles: res.motos || [] } : c));
+  }
+
+  async function confirmarCambioMoto() {
+    if (!cambiandoMoto?.elegida) return;
+    setCambiandoMoto((c) => ({ ...c, guardando: true, error: "" }));
+    const res = await fetch("/api/rentas", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: cambiandoMoto.renta.id, accion: "cambiarMoto", nuevoMotoId: cambiandoMoto.elegida }),
+    }).then((x) => x.json());
+    if (res.error) {
+      setCambiandoMoto((c) => ({ ...c, guardando: false, error: res.error }));
+      return;
+    }
+    setCambiandoMoto(null);
+    cargar();
   }
 
   if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
@@ -150,6 +175,9 @@ export default function Panel() {
                 <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
                   Contrato ({r.idioma === "en" ? "EN" : "ES"})
                 </button>
+                {r._tipo === "moto" && (
+                  <button className="btn-secondary" onClick={() => abrirCambioMoto(r)}>🔄 Cambiar moto</button>
+                )}
                 <button className="btn-secondary" onClick={() => iniciarDevolucion(r)}>Marcar devuelta</button>
               </div>
             </div>
@@ -162,6 +190,66 @@ export default function Panel() {
       )}
       {contratoVisible && contratoVisible._tipo === "moto" && (
         <ContratoModal renta={contratoVisible} moto={contratoVisible.motos} onCerrar={() => setContratoVisible(null)} />
+      )}
+
+      {cambiandoMoto && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(20,18,15,.6)", zIndex: 40, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "26px 16px", overflowY: "auto" }}>
+          <div className="card" style={{ padding: 24, maxWidth: 420, width: "100%", background: "var(--bg)" }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Cambiar moto</div>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 18px" }}>
+              Renta de {cambiandoMoto.renta.cliente} — actualmente {cambiandoMoto.renta._vehiculo}
+            </p>
+
+            {cambiandoMoto.motosDisponibles === null ? (
+              <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>Cargando motos disponibles…</p>
+            ) : cambiandoMoto.motosDisponibles.length === 0 ? (
+              <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>No hay ninguna otra moto disponible en este momento.</p>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Elige la moto disponible que la reemplazará:</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16, maxHeight: 260, overflowY: "auto" }}>
+                  {cambiandoMoto.motosDisponibles.map((m) => (
+                    <label
+                      key={m.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, cursor: "pointer",
+                        border: cambiandoMoto.elegida === m.id ? "1.5px solid var(--acento, #0071E3)" : "1px solid var(--border)",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="moto-reemplazo"
+                        checked={cambiandoMoto.elegida === m.id}
+                        onChange={() => setCambiandoMoto((c) => ({ ...c, elegida: m.id, error: "" }))}
+                      />
+                      <span style={{ fontSize: 14 }}>{m.placa} — {m.modelo}</span>
+                    </label>
+                  ))}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--panel-2)", padding: "10px 12px", borderRadius: 8, marginBottom: 16 }}>
+                  ℹ️ La moto {cambiandoMoto.renta._vehiculo} quedará disponible otra vez. El contrato del cliente se actualizará con la nueva moto.
+                </div>
+              </>
+            )}
+
+            {cambiandoMoto.error && (
+              <div style={{ marginBottom: 14, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 10, borderRadius: 6, fontSize: 13 }}>
+                {cambiandoMoto.error}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn-secondary" onClick={() => setCambiandoMoto(null)}>Cancelar</button>
+              <button
+                className="btn-primary"
+                disabled={!cambiandoMoto.elegida || cambiandoMoto.guardando}
+                onClick={confirmarCambioMoto}
+              >
+                {cambiandoMoto.guardando ? "Guardando…" : "Confirmar cambio"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {confirmando && (

@@ -157,13 +157,52 @@ export async function POST(req) {
 }
 
 // PATCH: solo staff — marcar una renta como devuelta (y, si tenía
-// extras, guardar cuáles se devolvieron)
+// extras, guardar cuáles se devolvieron), o cambiar la moto asignada
+// (acción separada, para cuando la moto entregada no arranca u otro
+// imprevisto obliga a darle al cliente otra).
 export async function PATCH(req) {
   if (!(await requiereStaff(req))) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  const { id, extras } = await req.json();
+  const body = await req.json();
+  const { id, extras, accion, nuevoMotoId } = body;
   if (!id) return NextResponse.json({ error: "Falta el id de la renta." }, { status: 400 });
 
   const db = supabaseServer();
+
+  if (accion === "cambiarMoto") {
+    if (!nuevoMotoId) return NextResponse.json({ error: "Selecciona la moto de reemplazo." }, { status: 400 });
+
+    const { data: rentaActual } = await db.from("rentas").select("id, moto_id, estado").eq("id", id).maybeSingle();
+    if (!rentaActual) return NextResponse.json({ error: "Esa renta no existe." }, { status: 404 });
+    if (rentaActual.estado === "devuelta") {
+      return NextResponse.json({ error: "Esta renta ya fue devuelta, no se puede cambiar la moto." }, { status: 409 });
+    }
+    if (rentaActual.moto_id === nuevoMotoId) {
+      return NextResponse.json({ error: "Elige una moto distinta a la actual." }, { status: 400 });
+    }
+
+    const { data: motoNueva } = await db.from("motos").select("id").eq("id", nuevoMotoId).maybeSingle();
+    if (!motoNueva) return NextResponse.json({ error: "Esa moto no existe." }, { status: 404 });
+
+    const { data: ocupada } = await db
+      .from("rentas")
+      .select("id")
+      .eq("moto_id", nuevoMotoId)
+      .eq("estado", "activa")
+      .maybeSingle();
+    if (ocupada) {
+      return NextResponse.json({ error: "Esa moto ya está en otra renta activa, elige otra." }, { status: 409 });
+    }
+
+    const { data, error } = await db
+      .from("rentas")
+      .update({ moto_id: nuevoMotoId })
+      .eq("id", id)
+      .select("*, motos(placa, modelo, tipo)")
+      .single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ renta: data });
+  }
+
   const actualizacion = { estado: "devuelta", fecha_devolucion_real: fechaHoyPanama() };
   if (Array.isArray(extras)) {
     actualizacion.extras = extras.map((e) => ({
