@@ -12,6 +12,12 @@ function FlotaContenido() {
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
 
+  // edición del tag de rastreo (AT2501) de una moto ya existente
+  const [editandoId, setEditandoId] = useState(null);
+  const [editTagId, setEditTagId] = useState("");
+  const [editPlataforma, setEditPlataforma] = useState("iphone");
+  const [errorTag, setErrorTag] = useState("");
+
   async function cargar() {
     setCargando(true);
     const [rm, rr] = await Promise.all([
@@ -37,6 +43,25 @@ function FlotaContenido() {
     if (res.error) return setError(res.error);
     setPlaca(""); setModelo("");
     setOk("Moto agregada a la lista de abajo.");
+    cargar();
+  }
+
+  function empezarEdicionTag(m) {
+    setEditandoId(m.id);
+    setEditTagId(m.tag_id || "");
+    setEditPlataforma(m.plataforma || "iphone");
+    setErrorTag("");
+  }
+
+  async function guardarTag(id) {
+    setErrorTag("");
+    const res = await fetch("/api/motos", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, tagId: editTagId, plataforma: editPlataforma }),
+    }).then((r) => r.json());
+    if (res.error) return setErrorTag(res.error);
+    setEditandoId(null);
     cargar();
   }
 
@@ -85,26 +110,60 @@ function FlotaContenido() {
           {motos.map((m) => {
             const ocupada = idsOcupadas.has(m.id);
             return (
-              <div key={m.id} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #1a1a1a", borderRadius: 4, padding: "3px 9px", background: "#fff", color: "#1a1a1a" }}>
-                  {m.placa}
-                </span>
-                <div style={{ fontSize: 14.5 }}>{m.modelo}</div>
-                <span style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--panel-2)", padding: "3px 9px", borderRadius: 3 }}>
-                  {m.tipo === "scooter" ? "Scooter" : "Honda Navi"}
-                </span>
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#1E7A38", fontWeight: 600 }}>
-                    {ocupada ? "alquilada" : "disponible"}
+              <div key={m.id} className="card" style={{ padding: "14px 18px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 15, letterSpacing: "1.5px", border: "2px solid #1a1a1a", borderRadius: 4, padding: "3px 9px", background: "#fff", color: "#1a1a1a" }}>
+                    {m.placa}
                   </span>
-                  <button
-                    className="btn-secondary btn-danger"
-                    disabled={ocupada}
-                    onClick={() => eliminar(m.id)}
-                    style={{ opacity: ocupada ? 0.4 : 1, cursor: ocupada ? "not-allowed" : "pointer" }}
-                  >
-                    Eliminar
-                  </button>
+                  <div style={{ fontSize: 14.5 }}>{m.modelo}</div>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--panel-2)", padding: "3px 9px", borderRadius: 3 }}>
+                    {m.tipo === "scooter" ? "Scooter" : "Honda Navi"}
+                  </span>
+                  <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#1E7A38", fontWeight: 600 }}>
+                      {ocupada ? "alquilada" : "disponible"}
+                    </span>
+                    <button
+                      className="btn-secondary btn-danger"
+                      disabled={ocupada}
+                      onClick={() => eliminar(m.id)}
+                      style={{ opacity: ocupada ? 0.4 : 1, cursor: ocupada ? "not-allowed" : "pointer" }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border)" }}>
+                  {editandoId === m.id ? (
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" }}>
+                      <div className="field" style={{ width: 200 }}>
+                        <label>tag_id del AT2501</label>
+                        <input value={editTagId} onChange={(e) => setEditTagId(e.target.value)} placeholder="Ej: AT2501-001" />
+                      </div>
+                      <div className="field" style={{ width: 160 }}>
+                        <label>Emparejado a</label>
+                        <select value={editPlataforma} onChange={(e) => setEditPlataforma(e.target.value)}>
+                          <option value="iphone">iPhone</option>
+                          <option value="android">Android</option>
+                        </select>
+                      </div>
+                      <button type="button" className="btn-primary" onClick={() => guardarTag(m.id)}>Guardar</button>
+                      <button type="button" className="btn-secondary" onClick={() => setEditandoId(null)}>Cancelar</button>
+                      {errorTag && <div style={{ width: "100%", color: "var(--danger)", fontSize: 13 }}>{errorTag}</div>}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--text-muted)" }}>
+                      {m.tag_id ? (
+                        <>📍 Tag <b style={{ color: "var(--text)" }}>{m.tag_id}</b> ({m.plataforma === "android" ? "Android" : "iPhone"})</>
+                      ) : (
+                        <>Sin tag de rastreo asignado</>
+                      )}
+                      <button type="button" className="btn-secondary" style={{ padding: "4px 14px", fontSize: 12.5 }} onClick={() => empezarEdicionTag(m)}>
+                        {m.tag_id ? "Editar tag" : "Asignar tag"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
