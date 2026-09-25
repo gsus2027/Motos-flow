@@ -23,11 +23,14 @@ async function requiereAdmin(req) {
 
 // GET: pública (el formulario del cliente necesita ver qué motos hay
 // disponibles), solo devuelve id/placa/modelo/tipo, nada sensible.
+// tag_id/plataforma se incluyen porque no son datos sensibles (solo
+// identifican el tag de rastreo), y así /admin/rastreo puede reusar esta
+// misma ruta sin duplicar la consulta.
 export async function GET(req) {
   const db = supabaseServer();
   const { data, error } = await db
     .from("motos")
-    .select("id, placa, modelo, tipo, creado_en")
+    .select("id, placa, modelo, tipo, tag_id, plataforma, creado_en")
     .order("creado_en", { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -44,17 +47,54 @@ export async function POST(req) {
   if (!(await requiereAdmin(req))) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   const { exito } = await verificarLimite(limitadorEscritura, ipDelRequest(req));
   if (!exito) return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
-  const { placa, modelo, tipo } = await req.json();
+  const { placa, modelo, tipo, tagId, plataforma } = await req.json();
   if (!placa?.trim() || !modelo?.trim()) {
     return NextResponse.json({ error: "Indica la placa y el modelo de la moto." }, { status: 400 });
   }
   const db = supabaseServer();
   const { data, error } = await db
     .from("motos")
-    .insert({ placa: placa.trim().toUpperCase(), modelo: modelo.trim(), tipo: tipo === "scooter" ? "scooter" : "navi" })
+    .insert({
+      placa: placa.trim().toUpperCase(),
+      modelo: modelo.trim(),
+      tipo: tipo === "scooter" ? "scooter" : "navi",
+      tag_id: tagId?.trim() || null,
+      plataforma: plataforma === "android" ? "android" : plataforma === "iphone" ? "iphone" : null,
+    })
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ moto: data });
+}
+
+// PATCH: solo staff — editar una moto existente (usado sobre todo para
+// asignarle su tag_id/plataforma de rastreo a una moto que ya existía
+// antes de tener esta función).
+export async function PATCH(req) {
+  if (!(await requiereAdmin(req))) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  const { exito } = await verificarLimite(limitadorEscritura, ipDelRequest(req));
+  if (!exito) return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
+  const { id, placa, modelo, tipo, tagId, plataforma } = await req.json();
+  if (!id) return NextResponse.json({ error: "Falta el id de la moto." }, { status: 400 });
+
+  const cambios = {};
+  if (placa !== undefined) cambios.placa = placa?.trim().toUpperCase() || null;
+  if (modelo !== undefined) cambios.modelo = modelo?.trim() || null;
+  if (tipo !== undefined) cambios.tipo = tipo === "scooter" ? "scooter" : "navi";
+  if (tagId !== undefined) cambios.tag_id = tagId?.trim() || null;
+  if (plataforma !== undefined) {
+    cambios.plataforma = plataforma === "android" ? "android" : plataforma === "iphone" ? "iphone" : null;
+  }
+
+  const db = supabaseServer();
+  const { data, error } = await db.from("motos").update(cambios).eq("id", id).select().single();
+  if (error) {
+    // el tag_id tiene una restricción "unique" en la base de datos
+    if (error.code === "23505") {
+      return NextResponse.json({ error: "Ese tag_id ya está asignado a otra moto." }, { status: 409 });
+    }
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ moto: data });
 }
 
