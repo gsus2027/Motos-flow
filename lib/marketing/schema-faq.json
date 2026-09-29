@@ -4,33 +4,99 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "How much does it cost to rent a scooter or moto in Bocas del Toro?",
-      "acceptedAnswer": {"@type":"Answer","text":"At Flow Rentals, a Honda Navi is a flat $20. A scooter is a flat $20. An e-bike is a flat $15. Ask about special low-season pricing."}
+      "name": "How much does it cost to rent a scooter or moto?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A Honda Navi is a flat $25. A scooter is a flat $30. An e-bike is a flat $15. Ask us about special low-season pricing."
+      }
     },
     {
       "@type": "Question",
-      "name": "Do I need a license to rent an e-bike or moto in Bocas del Toro?",
-      "acceptedAnswer": {"@type":"Answer","text":"No license is needed to rent an e-bike from Flow Rentals. For the Honda Navi or scooter, ask about license requirements when you book."}
+      "name": "Do I need a license to rent an e-bike or moto?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No license is needed for the e-bike. For the Honda Navi or scooter, you need a physical driver's license (a photo or digital copy isn't accepted). A regular car license is accepted — you don't need a motorcycle-specific one. No international license is required."
+      }
     },
     {
       "@type": "Question",
-      "name": "What are Flow Rentals' hours?",
-      "acceptedAnswer": {"@type":"Answer","text":"Flow Rentals is open every day from 9:00 AM to 7:00 PM on Isla Colón, Bocas del Toro."}
+      "name": "What are your hours?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We're open every day from 9:00 AM to 7:00 PM on Isla Colón, Bocas del Toro."
+      }
     },
     {
       "@type": "Question",
-      "name": "Where is Flow Rentals located?",
-      "acceptedAnswer": {"@type":"Answer","text":"Flow Rentals is on Calle Primera, Isla Colón, Bocas del Toro, Panama, right in front of the police station."}
+      "name": "Where are you located?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "On Calle Primera, Isla Colón, Bocas del Toro, Panama — right in front of the police station."
+      }
     },
     {
       "@type": "Question",
-      "name": "Does Flow Rentals deliver to hotels?",
-      "acceptedAnswer": {"@type":"Answer","text":"Yes, Flow Rentals offers hotel delivery and pickup on Isla Colón. Ask on WhatsApp when you book."}
+      "name": "Do you deliver to hotels?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — ask us on WhatsApp when you book and we'll bring your ride to your hotel."
+      }
     },
     {
       "@type": "Question",
-      "name": "Is there a discount for renting in low season?",
-      "acceptedAnswer": {"@type":"Answer","text":"Yes, Flow Rentals offers special pricing during low season. Ask directly on WhatsApp for current rates."}
+      "name": "Is there a discount in low season?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, we offer special low-season pricing. Ask us directly on WhatsApp for current rates."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it safe to ride a moto or scooter in Bocas del Toro?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, it's safe. Just watch out for taxis, which brake suddenly. Most of the route is paved and in good condition. Toward Bluff the road turns to rock and sand — go slow so you don't skid or get a flat."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens if the vehicle gets damaged or there's an accident?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Basic coverage covers damage to other vehicles, but not to the moto itself. If the moto is damaged, keys are lost, a tire goes flat, or it needs a tow, those costs are covered by the customer. We offer additional coverage (at a daily cost) that does cover damage to the moto during use."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I reach Starfish Beach and Boca del Drago by moto?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, both. Playa Bluff is 20 minutes from the park in Isla Colón, and Boca del Drago is 30 minutes. From there, it's a 10-minute walk to Starfish Beach, or take a water taxi if you'd rather not walk. You can do both routes in the same day."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is the vehicle delivered with a full tank?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, motos are delivered with a full tank and must be returned with a full tank too. The full route uses about $2.50 to $3.00 in gas."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I book in advance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes — we accept online payment when you book, or you can pay at our office when you arrive."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What payment methods do you accept?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We accept credit/debit cards, cash, and bank transfer."
+      }
     }
   ]
 }
