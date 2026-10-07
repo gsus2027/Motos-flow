@@ -139,6 +139,7 @@ export default function FormularioRentaEbike({ onExito }) {
     return (
       <PantallaExito
         idioma={form.idioma}
+        nombreCliente={form.cliente}
         tipo="ebike"
         tituloExito={t.exitoTitulo}
         textoExito={t.exitoTexto}

@@ -4,6 +4,7 @@ import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { calcularTarifaEbike, calcularExtras, fechaHoyPanama } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
 import { enviarCorreoContratoFirmado, enviarCorreoDevolucion } from "@/lib/email";
+import { manejarAjusteRenta } from "@/lib/ajustesRenta";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -140,17 +141,25 @@ export async function POST(req) {
 // PATCH: solo staff — marcar una renta de ebike como devuelta (y, si
 // tenía extras, guardar cuáles se devolvieron)
 export async function PATCH(req) {
-  if (!(await requiereStaff(req))) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  const { id, extras } = await req.json();
+  const sesion = await requiereStaff(req);
+  if (!sesion) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  const body = await req.json();
+  const { id, extras } = body;
   if (!id) return NextResponse.json({ error: "Falta el id de la renta." }, { status: 400 });
 
   const db = supabaseServer();
+
+  // Extender días (todo el equipo) o ajustar tarifa (solo admin)
+  const ajuste = await manejarAjusteRenta({ db, tabla: "rentas_ebike", tipo: "ebike", body, sesion });
+  if (ajuste) return NextResponse.json(ajuste.body, { status: ajuste.status });
   const actualizacion = { estado: "devuelta", fecha_devolucion_real: fechaHoyPanama() };
   if (Array.isArray(extras)) {
     actualizacion.extras = extras.map((e) => ({
       id: e.id,
       nombre: e.nombre,
       precio: e.precio,
+      ...(e.precioPorDia !== undefined ? { precioPorDia: e.precioPorDia } : {}),
+      ...(e.dias !== undefined ? { dias: e.dias } : {}),
       devuelto: e.devuelto === true,
     }));
   }

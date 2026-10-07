@@ -131,7 +131,17 @@ export default function Historial() {
                     <td style={{ padding: "10px 12px" }}>{formatoDia(r.fecha_prevista)}</td>
                     <td style={{ padding: "10px 12px" }}>{formatoDia(r.fecha_devolucion_real)}</td>
                     <td style={{ padding: "10px 12px", color: ex.color, fontSize: 12.5 }}>{ex.texto}</td>
-                    <td style={{ padding: "10px 12px", fontWeight: 600 }}>{r.tarifa_total != null ? `$${Number(r.tarifa_total).toFixed(2)}` : "—"}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: 600 }}>
+                      <div>{r.tarifa_total != null ? `$${Number(r.tarifa_total).toFixed(2)}` : "—"}</div>
+                      <div style={{ marginTop: 2 }}>
+                        {Number(r?.dias_extendidos) > 0 && (
+                          <span style={{ fontSize: 11, fontWeight: 600, background: "var(--highlight-bg)", color: "var(--highlight-text)", padding: "1px 6px", borderRadius: 6, marginRight: 4, whiteSpace: "nowrap" }}>+{r?.dias_extendidos} {Number(r?.dias_extendidos) === 1 ? "día" : "días"}</span>
+                        )}
+                        {r?.tarifa_original != null && (
+                          <span title={`Original: $${Number(r?.tarifa_original).toFixed(2)}${r?.ajuste_motivo ? " — " + r?.ajuste_motivo : ""}${r?.ajustado_por ? " (" + r?.ajustado_por + ")" : ""}`} style={{ fontSize: 11, fontWeight: 600, background: "var(--warning-bg)", color: "var(--warning-text)", padding: "1px 6px", borderRadius: 6, whiteSpace: "nowrap", cursor: "help" }}>ajustado</span>
+                        )}
+                      </div>
+                    </td>
                     <td style={{ padding: "10px 12px" }}>
                       <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: 12.5 }} onClick={() => setContratoVisible(r)}>Ver contrato</button>
                     </td>

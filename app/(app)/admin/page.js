@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import ContratoModal from "@/components/ContratoModal";
 import ContratoModalEbike from "@/components/ContratoModalEbike";
 import ImagenPrivada from "@/components/ImagenPrivada";
+import { useStaffActual } from "@/lib/staffContext";
 
 function formatoDia(iso) {
   if (!iso) return "—";
@@ -14,6 +15,27 @@ function diasEntre(isoA, isoB) {
   const b = new Date(isoB + "T00:00:00");
   return Math.round((b - a) / 86400000);
 }
+function sumarDias(iso, n) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const f = new Date(Date.UTC(y, m - 1, d + n));
+  return f.toISOString().slice(0, 10);
+}
+function dinero(n) {
+  const v = Math.round(Number(n || 0) * 100) / 100;
+  return "$" + (Number.isInteger(v) ? v : v.toFixed(2));
+}
+const OVERLAY = { position: "fixed", inset: 0, background: "rgba(20,18,15,.6)", zIndex: 40, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "26px 16px", overflowY: "auto" };
+function Etiqueta({ children, bg, fg }) {
+  return <span style={{ fontSize: 11, fontWeight: 600, background: bg, color: fg, padding: "1px 7px", borderRadius: 6, marginLeft: 6 }}>{children}</span>;
+}
+function Fila({ izq, der, fuerte }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontWeight: fuerte ? 600 : 400, fontSize: fuerte ? 14.5 : 13 }}>
+      <span style={{ color: fuerte ? "var(--text)" : "var(--text-muted)" }}>{izq}</span><span>{der}</span>
+    </div>
+  );
+}
+
 function hoyISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -69,6 +91,10 @@ export default function Panel() {
   const [contratoVisible, setContratoVisible] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
   const [cambiandoMoto, setCambiandoMoto] = useState(null); // { renta, motosDisponibles, elegida, error, guardando }
+  const [extendiendo, setExtendiendo] = useState(null); // { renta, fecha, calculo, calculando, error, guardando }
+  const [ajustando, setAjustando] = useState(null); // { renta, nuevoTotal, motivo, error, guardando }
+  const { staffActual } = useStaffActual();
+  const esAdmin = Boolean(staffActual?.es_admin);
 
   async function cargar() {
     setCargando(true);
@@ -129,6 +155,71 @@ export default function Panel() {
     cargar();
   }
 
+  // ---- Extender días (todo el equipo) ----
+  function endpointDe(r) {
+    return r._tipo === "ebike" ? "/api/rentas-ebike" : "/api/rentas";
+  }
+  async function calcularExtension(renta, fecha) {
+    setExtendiendo((c) => (c ? { ...c, fecha, calculando: true, error: "", calculo: null } : c));
+    const res = await fetch(endpointDe(renta), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: renta.id, accion: "extender", nuevaFechaPrevista: fecha, soloCalcular: true }),
+    }).then((x) => x.json()).catch(() => ({ error: "No se pudo calcular. Revisa tu conexión." }));
+    setExtendiendo((c) => {
+      if (!c || c.renta.id !== renta.id || c.fecha !== fecha) return c; // el usuario ya cambió la fecha
+      return { ...c, calculando: false, calculo: res.calculo || null, error: res.error || "" };
+    });
+  }
+  function abrirExtension(r) {
+    const fecha = sumarDias(r.fecha_prevista, 1);
+    setExtendiendo({ renta: r, fecha, calculo: null, calculando: true, error: "", guardando: false });
+    calcularExtension(r, fecha);
+  }
+  async function confirmarExtension() {
+    if (!extendiendo?.calculo) return;
+    setExtendiendo((c) => ({ ...c, guardando: true, error: "" }));
+    const res = await fetch(endpointDe(extendiendo.renta), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: extendiendo.renta.id, accion: "extender", nuevaFechaPrevista: extendiendo.fecha }),
+    }).then((x) => x.json()).catch(() => ({ error: "No se pudo guardar. Revisa tu conexión." }));
+    if (res.error) {
+      setExtendiendo((c) => ({ ...c, guardando: false, error: res.error }));
+      return;
+    }
+    setExtendiendo(null);
+    cargar();
+  }
+
+  // ---- Ajustar tarifa (solo administrador) ----
+  function abrirAjuste(r) {
+    setAjustando({ renta: r, nuevoTotal: String(r.tarifa_total ?? ""), motivo: "", error: "", guardando: false });
+  }
+  async function confirmarAjuste() {
+    const nuevo = Number(String(ajustando.nuevoTotal).replace(/[$,\s]/g, ""));
+    if (!Number.isFinite(nuevo) || nuevo < 0) {
+      setAjustando((c) => ({ ...c, error: "Escribe un total válido." }));
+      return;
+    }
+    if (!ajustando.motivo.trim()) {
+      setAjustando((c) => ({ ...c, error: "Escribe el motivo del ajuste." }));
+      return;
+    }
+    setAjustando((c) => ({ ...c, guardando: true, error: "" }));
+    const res = await fetch(endpointDe(ajustando.renta), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: ajustando.renta.id, accion: "ajustarTarifa", nuevoTotal: nuevo, motivo: ajustando.motivo.trim() }),
+    }).then((x) => x.json()).catch(() => ({ error: "No se pudo guardar. Revisa tu conexión." }));
+    if (res.error) {
+      setAjustando((c) => ({ ...c, guardando: false, error: res.error }));
+      return;
+    }
+    setAjustando(null);
+    cargar();
+  }
+
   if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   const rentasActivas = rentas.filter((r) => r.estado !== "devuelta").sort((a, b) => a.fecha_prevista.localeCompare(b.fecha_prevista));
@@ -163,6 +254,15 @@ export default function Panel() {
                 <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
                 {r.atendido_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
                 <div style={{ fontSize: 12, color: estadoExtras(r.extras).color }}>{estadoExtras(r.extras).texto}</div>
+                <div style={{ fontSize: 12.5, marginTop: 3 }}>
+                  Total: <strong>{dinero(r.tarifa_total)}</strong>
+                  {Number(r.dias_extendidos) > 0 && <Etiqueta bg="var(--highlight-bg)" fg="var(--highlight-text)">+{r.dias_extendidos} {Number(r.dias_extendidos) === 1 ? "día" : "días"}</Etiqueta>}
+                  {r.tarifa_original !== null && r.tarifa_original !== undefined && (
+                    <span title={`Original: ${dinero(r.tarifa_original)} — ${r.ajuste_motivo || ""}${r.ajustado_por ? ` (${r.ajustado_por})` : ""}`}>
+                      <Etiqueta bg="var(--warning-bg)" fg="var(--warning-text)">ajustado</Etiqueta>
+                    </span>
+                  )}
+                </div>
               </div>
               <EtiquetaTipo tipo={r._tipo} />
               <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>{r._vehiculo}</div>
@@ -178,6 +278,10 @@ export default function Panel() {
                 {r._tipo === "moto" && (
                   <button className="btn-secondary" onClick={() => abrirCambioMoto(r)}>🔄 Cambiar moto</button>
                 )}
+                <button className="btn-secondary" onClick={() => abrirExtension(r)}>📅 Extender días</button>
+                {esAdmin && (
+                  <button className="btn-secondary" onClick={() => abrirAjuste(r)}>✏️ Ajustar tarifa</button>
+                )}
                 <button className="btn-secondary" onClick={() => iniciarDevolucion(r)}>Marcar devuelta</button>
               </div>
             </div>
@@ -191,6 +295,152 @@ export default function Panel() {
       {contratoVisible && contratoVisible._tipo === "moto" && (
         <ContratoModal renta={contratoVisible} moto={contratoVisible.motos} onCerrar={() => setContratoVisible(null)} />
       )}
+
+      {extendiendo && (
+        <div style={OVERLAY}>
+          <div className="card" style={{ padding: 24, maxWidth: 420, width: "100%", background: "var(--bg)" }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Extender renta</div>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 16px" }}>
+              {extendiendo.renta.cliente} — {extendiendo.renta._vehiculo}
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devolución actual</div>
+                <div style={{ fontSize: 14, fontWeight: 600, marginTop: 6 }}>{formatoDia(extendiendo.renta.fecha_prevista)}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Nueva devolución</div>
+                <input
+                  type="date"
+                  value={extendiendo.fecha}
+                  min={sumarDias(extendiendo.renta.fecha_prevista, 1)}
+                  onChange={(e) => e.target.value && calcularExtension(extendiendo.renta, e.target.value)}
+                  style={{ width: "100%" }}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              {[1, 2, 3].map((n) => {
+                const f = sumarDias(extendiendo.renta.fecha_prevista, n);
+                const activo = extendiendo.fecha === f;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => calcularExtension(extendiendo.renta, f)}
+                    style={activo ? { borderColor: "var(--amber)", color: "var(--amber)" } : undefined}
+                  >
+                    +{n} {n === 1 ? "día" : "días"}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ background: "var(--panel-2)", borderRadius: 10, padding: "12px 14px", minHeight: 60 }}>
+              {extendiendo.calculando ? (
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Calculando…</div>
+              ) : extendiendo.calculo ? (
+                <>
+                  <Fila izq={`${extendiendo.calculo.diasExtra} × ${dinero(extendiendo.calculo.tarifaDia)} (tarifa diaria)`} der={dinero(extendiendo.calculo.costoBase)} />
+                  {extendiendo.calculo.costoCobertura > 0 && (
+                    <Fila izq={`Cobertura premium ${extendiendo.calculo.diasExtra} × ${dinero(extendiendo.calculo.coberturaDia)}`} der={dinero(extendiendo.calculo.costoCobertura)} />
+                  )}
+                  {extendiendo.calculo.lineasExtras.map((l, i) => (
+                    <Fila key={i} izq={`${l.nombre} ${extendiendo.calculo.diasExtra} × ${dinero(l.porDia)}`} der={dinero(l.costo)} />
+                  ))}
+                  <div style={{ borderTop: "1px solid var(--border)", margin: "6px 0 4px" }} />
+                  <Fila izq="Total anterior" der={dinero(extendiendo.calculo.totalAnterior)} />
+                  <Fila fuerte izq="Nuevo total" der={<span style={{ color: "#245939" }}>{dinero(extendiendo.calculo.nuevoTotal)} <span style={{ fontSize: 12, fontWeight: 400 }}>(+{dinero(extendiendo.calculo.total)})</span></span>} />
+                </>
+              ) : null}
+            </div>
+
+            {extendiendo.error && (
+              <div style={{ marginTop: 14, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 10, borderRadius: 6, fontSize: 13 }}>
+                {extendiendo.error}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button className="btn-secondary" onClick={() => setExtendiendo(null)}>Cancelar</button>
+              <button
+                className="btn-primary"
+                disabled={!extendiendo.calculo || extendiendo.calculando || extendiendo.guardando}
+                onClick={confirmarExtension}
+              >
+                {extendiendo.guardando ? "Guardando…" : "Confirmar extensión"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {ajustando && (() => {
+        const actual = Number(ajustando.renta.tarifa_total || 0);
+        const nuevo = Number(String(ajustando.nuevoTotal).replace(/[$,\s]/g, ""));
+        const dif = Number.isFinite(nuevo) ? Math.round((nuevo - actual) * 100) / 100 : null;
+        const yaAjustada = ajustando.renta.tarifa_original !== null && ajustando.renta.tarifa_original !== undefined;
+        return (
+          <div style={OVERLAY}>
+            <div className="card" style={{ padding: 24, maxWidth: 420, width: "100%", background: "var(--bg)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontWeight: 600, fontSize: 15 }}>Ajustar tarifa</span>
+                <span style={{ fontSize: 11, fontWeight: 600, background: "var(--warning-bg)", color: "var(--warning-text)", padding: "2px 8px", borderRadius: 6 }}>solo admin</span>
+              </div>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "2px 0 16px" }}>
+                {ajustando.renta.cliente} — {ajustando.renta._vehiculo}
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Total actual</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, marginTop: 4 }}>{dinero(actual)}</div>
+                  {yaAjustada && <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>Formulario: {dinero(ajustando.renta.tarifa_original)}</div>}
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Nuevo total ($)</div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={ajustando.nuevoTotal}
+                    onChange={(e) => setAjustando((c) => ({ ...c, nuevoTotal: e.target.value, error: "" }))}
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Motivo (obligatorio)</div>
+                <input
+                  type="text"
+                  maxLength={200}
+                  placeholder="Descuento cliente frecuente"
+                  value={ajustando.motivo}
+                  onChange={(e) => setAjustando((c) => ({ ...c, motivo: e.target.value, error: "" }))}
+                  style={{ width: "100%" }}
+                />
+              </div>
+              {dif !== null && dif !== 0 && (
+                <div style={{ background: "var(--warning-bg)", color: "var(--warning-text)", borderRadius: 8, padding: "10px 12px", fontSize: 13 }}>
+                  Diferencia: {dif > 0 ? "+" : "−"}{dinero(Math.abs(dif))}. Se actualiza en Dinero, Historial y el contrato. El precio original queda guardado.
+                </div>
+              )}
+              {ajustando.error && (
+                <div style={{ marginTop: 14, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 10, borderRadius: 6, fontSize: 13 }}>
+                  {ajustando.error}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <button className="btn-secondary" onClick={() => setAjustando(null)}>Cancelar</button>
+                <button className="btn-primary" disabled={ajustando.guardando} onClick={confirmarAjuste}>
+                  {ajustando.guardando ? "Guardando…" : "Guardar ajuste"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {cambiandoMoto && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(20,18,15,.6)", zIndex: 40, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "26px 16px", overflowY: "auto" }}>

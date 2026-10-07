@@ -183,6 +183,7 @@ export default function FormularioRenta({ onExito }) {
     return (
       <PantallaExito
         idioma={form.idioma}
+        nombreCliente={form.cliente}
         tipo="moto"
         tituloExito={t.exitoTitulo}
         textoExito={t.exitoTexto}
