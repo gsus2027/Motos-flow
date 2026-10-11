@@ -19,6 +19,7 @@ const NAV_ADMIN = [
   ["/admin/equipo", "Equipo"],
   ["/admin/respaldos", "Respaldos"],
   ["/admin/reportes", "💰 Dinero"],
+  ["/admin/comisiones", "🏆 Comisiones"],
 ];
 
 export default function AdminLayout({ children }) {

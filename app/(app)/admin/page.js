@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import ContratoModal from "@/components/ContratoModal";
 import ContratoModalEbike from "@/components/ContratoModalEbike";
 import ImagenPrivada from "@/components/ImagenPrivada";
+import MisComisiones from "@/components/MisComisiones";
 import { useStaffActual } from "@/lib/staffContext";
 
 function formatoDia(iso) {
@@ -231,6 +232,8 @@ export default function Panel() {
     <div>
       <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Panel</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Estado actual de la flota (motos + ebikes) y las rentas en curso.</p>
+
+      <MisComisiones />
 
       <div style={{ display: "flex", gap: 14, marginBottom: 30, flexWrap: "wrap" }}>
         <Stat label="Vehículos en flota" value={totalVehiculos} />

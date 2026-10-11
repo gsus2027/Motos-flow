@@ -89,9 +89,11 @@ export async function POST(req) {
   const totalFinal = resultado.total + extrasTotal;
 
   let atendidoPor = null;
+  let atendidoPorId = null;
   if (atendioClienteId) {
-    const { data: staffElegido } = await db.from("staff").select("nombre").eq("id", atendioClienteId).eq("activo", true).maybeSingle();
+    const { data: staffElegido } = await db.from("staff").select("id, nombre").eq("id", atendioClienteId).eq("activo", true).maybeSingle();
     atendidoPor = staffElegido?.nombre || null;
+    atendidoPorId = staffElegido?.id || null;
   }
 
   const { data, error } = await db
@@ -115,6 +117,7 @@ export async function POST(req) {
       tarifa_total: totalFinal,
       extras: extrasDetalle,
       atendido_por: atendidoPor,
+      atendido_por_id: atendidoPorId,
     })
     .select()
     .single();
