@@ -29,10 +29,13 @@ export default function MisComisiones() {
   const { mio, periodo, config, hoy } = datos;
   const dias = mio?.dias || [];
   const deHoy = dias.find((d) => d.fecha === hoy);
-  const rentadoHoy = deHoy?.rentado || 0;
-  const meta = Number(config?.metaDiaria || 0);
-  const progreso = meta > 0 ? Math.min(100, Math.round((rentadoHoy / meta) * 100)) : 0;
-  const falta = Math.max(0, Math.round((meta - rentadoHoy) * 100) / 100);
+  // La meta se muestra en comisión (no en monto rentado): el equipo solo
+  // ve lo que gana, nunca cuánto rentó.
+  const comisionHoy = deHoy?.comision || 0;
+  const meta = Number(config?.metaComision || 0);
+  const cumplida = Boolean(deHoy?.llegoMeta);
+  const progreso = meta > 0 ? (cumplida ? 100 : Math.min(99, Math.round((comisionHoy / meta) * 100))) : 0;
+  const falta = cumplida ? 0 : Math.max(0, Math.round((meta - comisionHoy) * 100) / 100);
   const visibles = verTodo ? dias : dias.slice(0, 4);
 
   return (
@@ -46,19 +49,19 @@ export default function MisComisiones() {
         <div style={{ background: "var(--panel-2)", borderRadius: 12, padding: 12 }}>
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Llevas en el periodo</div>
           <div style={{ fontSize: 24, fontWeight: 600, color: "#245939" }}>{dinero(mio?.total)}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>de {dinero(mio?.rentado)} rentados</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{mio?.bonos > 0 ? `incluye ${dinero(mio.bonos)} en bonos` : "en comisiones"}</div>
         </div>
         <div style={{ background: "var(--panel-2)", borderRadius: 12, padding: 12 }}>
           <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Hoy</div>
           <div style={{ fontSize: 24, fontWeight: 600 }}>{dinero(deHoy?.total)}</div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>de {dinero(rentadoHoy)} rentados</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{deHoy?.bono > 0 ? `incluye bono de ${dinero(deHoy.bono)}` : "en comisión"}</div>
         </div>
       </div>
 
       {meta > 0 && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 4 }}>
-            <span>Meta del día: {dinero(meta)} rentados</span>
+            <span>Meta del día: {dinero(meta)} en comisión</span>
             <span style={{ color: falta === 0 ? "#245939" : "var(--text-muted)", fontWeight: falta === 0 ? 600 : 400 }}>
               {falta === 0 ? "¡Meta cumplida!" : `te faltan ${dinero(falta)}`}
             </span>
@@ -89,9 +92,7 @@ export default function MisComisiones() {
                   </span>
                 )}
               </span>
-              <span style={{ color: "var(--text-muted)" }}>
-                {dinero(d.rentado)} → <strong style={{ color: "var(--text)" }}>{dinero(d.total)}</strong>
-              </span>
+              <strong>{dinero(d.total)}</strong>
             </div>
           ))}
           {dias.length > 4 && (

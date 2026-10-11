@@ -100,11 +100,23 @@ export async function GET(req) {
   const hoy = fechaHoyPanama();
   try {
     const { cfg, staff, inicioPeriodo, calculo } = await datosPeriodo(db, hoy, hoy);
-    const mio = calculo.miembros.find((x) => x.staffId === yo.id) || null;
+    // Al equipo solo se le envía lo que lleva en comisión: nunca los montos
+    // rentados, los clientes ni la tasa (eso solo lo ve el administrador).
+    const propio = calculo.miembros.find((x) => x.staffId === yo.id) || null;
+    const r2 = (n) => Math.round(Number(n || 0) * 100) / 100;
+    const mio = propio
+      ? {
+          total: propio.total,
+          comision: propio.comision,
+          bonos: propio.bonos,
+          metasCumplidas: propio.metasCumplidas,
+          dias: propio.dias.map((d) => ({ fecha: d.fecha, comision: d.comision, bono: d.bono, llegoMeta: d.llegoMeta, total: d.total })),
+        }
+      : null;
     const respuesta = {
       hoy,
       periodo: { inicio: inicioPeriodo, hasta: hoy },
-      config: { tasa: cfg.tasa, metaDiaria: cfg.metaDiaria, bono: cfg.bono },
+      config: { metaComision: r2((cfg.metaDiaria * cfg.tasa) / 100), bono: cfg.bono },
       comisiona: yo.comisiona !== false,
       mio,
     };
