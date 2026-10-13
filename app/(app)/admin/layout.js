@@ -4,6 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { StaffProvider } from "@/lib/staffContext";
 import { colorDeStaff, primerNombre, inicial } from "@/lib/colorStaff";
+import EmpezarTurno from "@/components/EmpezarTurno";
+
+function horaPanama(iso) {
+  return iso ? new Date(iso).toLocaleTimeString("es-PA", { hour: "numeric", minute: "2-digit", timeZone: "America/Panama" }) : "";
+}
+const CLAVE_SALTAR_TURNO = "flow-revisando-sin-turno";
 
 // Usuario activo siempre visible (13-oct-2026): si nadie toca la pantalla en
 // 20 minutos, el panel se bloquea solo. La última actividad se comparte
@@ -50,6 +56,9 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const [staffActual, setStaffActual] = useState(null);
   const [cargandoStaff, setCargandoStaff] = useState(true);
+  // Turnos de caja (13-oct-2026): estado del turno de quien tiene la sesión.
+  const [infoTurno, setInfoTurno] = useState(null); // respuesta de GET /api/turnos
+  const [saltoTurno, setSaltoTurno] = useState(false);
 
   // Se vuelve a preguntar quién está conectado al cambiar de pantalla
   // (13-oct-2026): la pantalla de entrar comparte este layout, así que sin
@@ -62,6 +71,25 @@ export default function AdminLayout({ children }) {
       .catch(() => {})
       .finally(() => setCargandoStaff(false));
   }, [pathname]);
+
+  useEffect(() => {
+    if (!staffActual) {
+      setInfoTurno(null);
+      return;
+    }
+    fetch("/api/turnos")
+      .then((r) => r.json())
+      .then((d) => setInfoTurno(d && !d.error ? d : null))
+      .catch(() => setInfoTurno(null));
+    try {
+      setSaltoTurno(window.sessionStorage.getItem(CLAVE_SALTAR_TURNO) === String(staffActual.id));
+    } catch {
+      setSaltoTurno(false);
+    }
+  }, [staffActual, pathname]);
+
+  const turnoMio = infoTurno && !infoTurno.sinTabla && infoTurno.esMio ? infoTurno.turno : null;
+  const pideTurno = Boolean(staffActual && infoTurno && !infoTurno.sinTabla && !infoTurno.esMio && !saltoTurno && pathname !== "/admin/entrar");
 
   async function bloquear(motivo) {
     await fetch("/api/auth", { method: "DELETE" }).catch(() => {});
@@ -163,7 +191,16 @@ export default function AdminLayout({ children }) {
             <div style={{ flex: "1 1 180px", minWidth: 0 }}>
               <div style={{ fontSize: 12.5, opacity: 0.9 }}>Atendiendo ahora</div>
               <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>{staffActual.nombre}</div>
+              {turnoMio && <div style={{ fontSize: 13, opacity: 0.92 }}>Turno desde las {horaPanama(turnoMio.abierto_en)}</div>}
             </div>
+            {turnoMio && (
+              <Link
+                href="/admin/turno"
+                style={{ minHeight: 44, padding: "0 18px", borderRadius: 980, background: "#fff", color: "#1D1D1F", fontSize: 15, fontWeight: 600, display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+              >
+                Cerrar turno
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => bloquear("cambio")}
@@ -173,7 +210,28 @@ export default function AdminLayout({ children }) {
             </button>
           </div>
         )}
-        <StaffProvider value={{ staffActual, cargando: cargandoStaff }}>{children}</StaffProvider>
+        <StaffProvider value={{ staffActual, cargando: cargandoStaff, turno: turnoMio }}>{children}</StaffProvider>
+        {pideTurno && (
+          <EmpezarTurno
+            staffActual={staffActual}
+            turnoDeOtro={infoTurno.turno}
+            ultimoCerrado={infoTurno.ultimoCerrado}
+            onListo={(turno) => setInfoTurno({ turno, esMio: true })}
+            onNoSoy={() => bloquear("cambio")}
+            onSaltar={
+              staffActual.es_admin
+                ? () => {
+                    try {
+                      window.sessionStorage.setItem(CLAVE_SALTAR_TURNO, String(staffActual.id));
+                    } catch {
+                      // sin almacenamiento: se salta solo en esta pantalla
+                    }
+                    setSaltoTurno(true);
+                  }
+                : undefined
+            }
+          />
+        )}
       </div>
     </div>
   );
