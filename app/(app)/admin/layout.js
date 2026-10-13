@@ -10,6 +10,7 @@ const NAV = [
   ["/admin/nueva-renta-ebike", "Nueva renta (ebike)"],
   ["/admin/calendario", "Calendario"],
   ["/admin/historial", "Historial"],
+  ["/admin/cierre", "Cierre del día"],
 ];
 const NAV_ADMIN = [
   ["/admin/flota", "Flota de motos"],

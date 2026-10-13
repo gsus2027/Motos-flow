@@ -4,7 +4,9 @@ import ContratoModal from "@/components/ContratoModal";
 import ContratoModalEbike from "@/components/ContratoModalEbike";
 import ImagenPrivada from "@/components/ImagenPrivada";
 import MisComisiones from "@/components/MisComisiones";
+import CobroModal from "@/components/CobroModal";
 import { useStaffActual } from "@/lib/staffContext";
+import { estadoCobro, claveRenta, METODO_COBRO_LABELS } from "@/lib/cobros";
 
 function formatoDia(iso) {
   if (!iso) return "—";
@@ -84,6 +86,27 @@ function EtiquetaTipo({ tipo }) {
   );
 }
 
+// Cuadre de pagos (13-oct-2026): debajo del nombre del cliente, si ya pagó
+// (y cómo) o cuánto falta.
+function EstadoCobro({ cobro }) {
+  const { pagado, pendiente, cobros, sinDatos } = cobro;
+  if (sinDatos) return null;
+  const pill = (texto, bg, fg) => (
+    <span style={{ display: "inline-block", fontSize: 12, fontWeight: 600, background: bg, color: fg, padding: "3px 10px", borderRadius: 20, marginTop: 4 }}>{texto}</span>
+  );
+  if (pendiente <= 0 && pagado > 0) {
+    const ultimo = cobros[cobros.length - 1];
+    const metodos = [...new Set(cobros.map((c) => METODO_COBRO_LABELS[c.metodo] || c.metodo))].join(" + ");
+    const aut = cobros.length === 1 && ultimo?.autorizacion_ult4 ? ` ···${ultimo.autorizacion_ult4}` : "";
+    return <div>{pill(`Cobrado · ${metodos}${aut}`, "#E6F2E9", "#1E5E34")}</div>;
+  }
+  if (pendiente > 0 && pagado > 0) {
+    return <div>{pill(`Pagó ${dinero(pagado)} · falta ${dinero(pendiente)}`, "var(--warning-bg)", "var(--warning-text)")}</div>;
+  }
+  if (pendiente > 0) return <div>{pill(`Falta cobrar ${dinero(pendiente)}`, "var(--warning-bg)", "var(--warning-text)")}</div>;
+  return null;
+}
+
 export default function Panel() {
   const [motos, setMotos] = useState([]);
   const [ebikes, setEbikes] = useState([]);
@@ -94,17 +117,30 @@ export default function Panel() {
   const [cambiandoMoto, setCambiandoMoto] = useState(null); // { renta, motosDisponibles, elegida, error, guardando }
   const [extendiendo, setExtendiendo] = useState(null); // { renta, fecha, calculo, calculando, error, guardando }
   const [ajustando, setAjustando] = useState(null); // { renta, nuevoTotal, motivo, error, guardando }
+  // Cuadre de pagos (13-oct-2026): cobros de las rentas activas, agrupados
+  // por renta, y la ventana "Cobrar" abierta (si hay).
+  const [cobrosPorRenta, setCobrosPorRenta] = useState({});
+  const [cobrando, setCobrando] = useState(null); // { renta, pendiente, luegoDevolver }
   const { staffActual } = useStaffActual();
   const esAdmin = Boolean(staffActual?.es_admin);
 
   async function cargar() {
     setCargando(true);
-    const [rm, rr, re, rre] = await Promise.all([
+    const [rm, rr, re, rre, rc] = await Promise.all([
       fetch("/api/motos").then((r) => r.json()),
       fetch("/api/rentas").then((r) => r.json()),
       fetch("/api/ebikes").then((r) => r.json()),
       fetch("/api/rentas-ebike").then((r) => r.json()),
+      // Si todavía no se corrió supabase-schema-cobros.sql esto falla: el
+      // Panel sigue funcionando igual que antes, solo sin estado de cobro.
+      fetch("/api/cobros").then((r) => r.json()).catch(() => ({})),
     ]);
+    const agrupados = {};
+    for (const c of rc.cobros || []) {
+      const k = claveRenta(c.renta_tipo, c.renta_id);
+      (agrupados[k] = agrupados[k] || []).push(c);
+    }
+    setCobrosPorRenta(Array.isArray(rc.cobros) ? agrupados : null);
     setMotos(rm.motos || []);
     setEbikes(re.ebikes || []);
     const rentasMoto = (rr.rentas || []).map((r) => ({ ...r, _tipo: "moto", _vehiculo: r.motos ? `${r.motos.placa} — ${r.motos.modelo}` : "—" }));
@@ -124,7 +160,19 @@ export default function Panel() {
     cargar();
   }
 
-  function iniciarDevolucion(r) {
+  function cobroDe(r) {
+    // null = la tabla de cobros todavía no existe: no se muestra nada de cobro.
+    if (!cobrosPorRenta) return { total: Number(r.tarifa_total || 0), pagado: 0, pendiente: 0, cobros: [], sinDatos: true };
+    return estadoCobro(r, cobrosPorRenta[claveRenta(r._tipo, r.id)]);
+  }
+
+  function iniciarDevolucion(r, { sinCobrar = false } = {}) {
+    // Antes de devolver, si falta plata, primero se ofrece cobrar.
+    const { pendiente } = cobroDe(r);
+    if (!sinCobrar && pendiente > 0) {
+      setCobrando({ renta: r, pendiente, luegoDevolver: true });
+      return;
+    }
     if (Array.isArray(r.extras) && r.extras.length > 0) {
       setConfirmando({ renta: r, estado: Object.fromEntries(r.extras.map((e) => [e.id, null])) });
     } else {
@@ -189,7 +237,14 @@ export default function Panel() {
       setExtendiendo((c) => ({ ...c, guardando: false, error: res.error }));
       return;
     }
+    const rentaExtendida = extendiendo.renta;
     setExtendiendo(null);
+    // Al extender, se ofrece cobrar los días nuevos de una vez.
+    if (res.renta) {
+      const actualizada = { ...rentaExtendida, ...res.renta };
+      const { pendiente } = cobroDe(actualizada);
+      if (pendiente > 0) setCobrando({ renta: actualizada, pendiente, luegoDevolver: false });
+    }
     cargar();
   }
 
@@ -227,6 +282,7 @@ export default function Panel() {
   const totalVehiculos = motos.length + ebikes.length;
   const disponibles = totalVehiculos - rentasActivas.length;
   const vencidas = rentasActivas.filter((r) => estadoRenta(r) === "vencida").length;
+  const porCobrar = Math.round(rentasActivas.reduce((s, r) => s + cobroDe(r).pendiente, 0) * 100) / 100;
 
   return (
     <div>
@@ -240,6 +296,7 @@ export default function Panel() {
         <Stat label="Disponibles" value={Math.max(disponibles, 0)} color="#3F7D58" />
         <Stat label="Rentados" value={rentasActivas.length} color="#8A5A03" />
         <Stat label="Vencidos" value={vencidas} color="#C0392B" />
+        <Stat label="Por cobrar" value={dinero(porCobrar)} color={porCobrar > 0 ? "#8A6100" : undefined} />
       </div>
 
       <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 12px" }}>Rentas en curso</h2>
@@ -257,6 +314,7 @@ export default function Panel() {
                 <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
                 {r.atendido_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
                 <div style={{ fontSize: 12, color: estadoExtras(r.extras).color }}>{estadoExtras(r.extras).texto}</div>
+                <EstadoCobro cobro={cobroDe(r)} />
                 <div style={{ fontSize: 12.5, marginTop: 3 }}>
                   Total: <strong>{dinero(r.tarifa_total)}</strong>
                   {Number(r.dias_extendidos) > 0 && <Etiqueta bg="var(--highlight-bg)" fg="var(--highlight-text)">+{r.dias_extendidos} {Number(r.dias_extendidos) === 1 ? "día" : "días"}</Etiqueta>}
@@ -275,6 +333,11 @@ export default function Panel() {
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
                 </div>
                 <Badge estado={estadoRenta(r)} />
+                {cobroDe(r).pendiente > 0 && (
+                  <button className="btn-primary" style={{ padding: "10px 20px", fontSize: 15 }} onClick={() => setCobrando({ renta: r, pendiente: cobroDe(r).pendiente, luegoDevolver: false })}>
+                    Cobrar {dinero(cobroDe(r).pendiente)}
+                  </button>
+                )}
                 <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
                   Contrato ({r.idioma === "en" ? "EN" : "ES"})
                 </button>
@@ -503,6 +566,34 @@ export default function Panel() {
             </div>
           </div>
         </div>
+      )}
+
+      {cobrando && (
+        <CobroModal
+          renta={cobrando.renta}
+          pendiente={cobrando.pendiente}
+          nombreStaff={staffActual?.nombre}
+          aviso={cobrando.luegoDevolver ? `A esta renta le falta cobrar ${dinero(cobrando.pendiente)} antes de marcarla devuelta.` : ""}
+          onCerrar={() => setCobrando(null)}
+          onCobrado={async () => {
+            const { renta, luegoDevolver } = cobrando;
+            setCobrando(null);
+            await cargar();
+            if (luegoDevolver) iniciarDevolucion(renta, { sinCobrar: true });
+          }}
+          accionSecundaria={
+            cobrando.luegoDevolver
+              ? {
+                  texto: "Marcar devuelta sin cobrar",
+                  onClick: () => {
+                    const { renta } = cobrando;
+                    setCobrando(null);
+                    iniciarDevolucion(renta, { sinCobrar: true });
+                  },
+                }
+              : undefined
+          }
+        />
       )}
 
       {confirmando && (
