@@ -120,6 +120,16 @@ export default function CierreDia() {
         Lo que se cobró, por método. Compáralo con el cierre de lote del datáfono, las capturas de Yappy y el efectivo en caja.
       </p>
 
+      <div className="card" style={{ padding: "12px 16px", marginBottom: 18, background: "var(--highlight-bg)", borderColor: "var(--highlight-border)", fontSize: 14 }}>
+        La caja de Isla Colón es una sola para Flow Rentals y Multicargas: los turnos (contar el efectivo) y el cuadre con fotos se hacen en{" "}
+        {process.env.NEXT_PUBLIC_MULTICARGAS_URL ? (
+          <a href={`${process.env.NEXT_PUBLIC_MULTICARGAS_URL.replace(/\/$/, "")}/cuadre`} target="_blank" rel="noreferrer">Multicargas</a>
+        ) : (
+          "Multicargas"
+        )}
+        , y ahí ya se suman los cobros de Flow.
+      </div>
+
       <div className="field" style={{ maxWidth: 220, marginBottom: 20 }}>
         <label htmlFor="cierre-fecha">Día</label>
         <input id="cierre-fecha" type="date" value={fecha} max={hoyPanama()} onChange={(e) => setFecha(e.target.value)} />
