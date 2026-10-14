@@ -85,7 +85,7 @@ async function conSesion(staffId) {
     secure: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 12, // 12 horas (ver lib/session.js)
+    maxAge: 60 * 60 * 5, // 5 horas (ver lib/session.js)
   });
   return res;
 }

@@ -7,7 +7,7 @@ import { colorDeStaff, inicial } from "@/lib/colorStaff";
 // el primero de la lista, y era fácil entrar con el nombre de otro). Cada
 // quien toca su nombre, con su color, y escribe su PIN.
 const AVISOS = {
-  inactivo: "La sesión se cerró sola después de 20 minutos sin uso.",
+  inactivo: "La sesión se cerró sola después de 5 horas.",
   cambio: "Sesión cerrada. Toca tu nombre para entrar.",
   turno: "Turno cerrado. El siguiente entra con su nombre.",
 };
