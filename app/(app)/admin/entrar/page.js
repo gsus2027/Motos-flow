@@ -1,6 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { colorDeStaff, inicial } from "@/lib/colorStaff";
+
+// 13-oct-2026: el nombre ya no viene preseleccionado (antes quedaba elegido
+// el primero de la lista, y era fácil entrar con el nombre de otro). Cada
+// quien toca su nombre, con su color, y escribe su PIN.
+const AVISOS = {
+  inactivo: "La sesión se cerró sola después de 20 minutos sin uso.",
+  cambio: "Sesión cerrada. Toca tu nombre para entrar.",
+  turno: "Turno cerrado. El siguiente entra con su nombre.",
+};
 
 export default function EntrarPanel() {
   const router = useRouter();
@@ -10,15 +20,21 @@ export default function EntrarPanel() {
   const [nombreNuevo, setNombreNuevo] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [aviso, setAviso] = useState("");
 
   useEffect(() => {
     fetch("/api/auth")
       .then((r) => r.json())
       .then((d) => {
         setStaff(d.staff || []);
-        if ((d.staff || []).length > 0) setStaffId(d.staff[0].id);
       })
       .catch(() => setStaff([]));
+    try {
+      const motivo = new URLSearchParams(window.location.search).get("motivo");
+      if (AVISOS[motivo]) setAviso(AVISOS[motivo]);
+    } catch {
+      // sin aviso
+    }
   }, []);
 
   async function primerRegistro() {
@@ -62,7 +78,7 @@ export default function EntrarPanel() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--panel-2)", padding: 20 }}>
-      <div className="card" style={{ maxWidth: 380, width: "100%", padding: 30 }}>
+      <div className="card" style={{ maxWidth: 460, width: "100%", padding: 30 }}>
         <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: 20, marginBottom: 4, color: "var(--text)" }}>Flow Rentals</div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
           {hayEquipo
@@ -70,23 +86,61 @@ export default function EntrarPanel() {
             : "Primera vez configurando el panel: crea tu cuenta. Después, desde \"Equipo\", puedes agregar a los demás."}
         </div>
 
+        {aviso && (
+          <div style={{ background: "var(--highlight-bg)", color: "var(--text)", border: "1px solid var(--highlight-border)", borderRadius: 12, padding: "10px 12px", fontSize: 13.5, marginBottom: 16 }}>{aviso}</div>
+        )}
+
         {hayEquipo ? (
           <>
-            <div className="field" style={{ marginBottom: 16 }}>
-              <label>Tu nombre</label>
-              <select value={staffId} onChange={(e) => setStaffId(e.target.value)}>
-                {staff.map((s) => (
-                  <option key={s.id} value={s.id}>{s.nombre}</option>
-                ))}
-              </select>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }} id="quien-titulo">¿Quién está atendiendo?</div>
+            <div role="radiogroup" aria-labelledby="quien-titulo" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 10, marginBottom: 18 }}>
+              {staff.map((s) => {
+                const elegido = staffId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={elegido}
+                    onClick={() => {
+                      setStaffId(s.id);
+                      setPin("");
+                      setError("");
+                    }}
+                    style={{
+                      minHeight: 92,
+                      borderRadius: 14,
+                      border: elegido ? `3px solid ${colorDeStaff(s.id)}` : "1px solid var(--border)",
+                      background: elegido ? "var(--panel-2)" : "var(--panel)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      cursor: "pointer",
+                      padding: 8,
+                      color: "var(--text)",
+                    }}
+                  >
+                    <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: "50%", background: colorDeStaff(s.id), color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18 }}>
+                      {inicial(s.nombre)}
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: elegido ? 600 : 500 }}>{s.nombre}</span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="field" style={{ marginBottom: 16 }}>
-              <label>Tu PIN</label>
-              <input type="password" autoFocus value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && entrar()} />
-            </div>
-            <button type="button" className="btn-primary" onClick={entrar} disabled={enviando} style={{ width: "100%" }}>
-              {enviando ? "Entrando…" : "Entrar"}
-            </button>
+            {staffId && (
+              <>
+                <div className="field" style={{ marginBottom: 16 }}>
+                  <label htmlFor="entrar-pin">PIN de {staff.find((s) => s.id === staffId)?.nombre}</label>
+                  <input id="entrar-pin" type="password" autoFocus value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && entrar()} />
+                </div>
+                <button type="button" className="btn-primary" onClick={entrar} disabled={enviando} style={{ width: "100%" }}>
+                  {enviando ? "Entrando…" : "Entrar"}
+                </button>
+              </>
+            )}
           </>
         ) : (
           <>
