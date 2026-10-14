@@ -37,19 +37,16 @@ export default function CierreDia() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [corrigiendo, setCorrigiendo] = useState(null); // { cobro, metodo, autorizacion, error, guardando }
-  const [turnos, setTurnos] = useState([]);
 
   async function cargar(dia = fecha) {
     setCargando(true);
     setError("");
-    const [rc, ra, rr, rre, rt] = await Promise.all([
+    const [rc, ra, rr, rre] = await Promise.all([
       fetch(`/api/cobros?fecha=${dia}`).then((r) => r.json()).catch(() => ({ error: "No se pudo cargar." })),
       fetch("/api/cobros").then((r) => r.json()).catch(() => ({})),
       fetch("/api/rentas").then((r) => r.json()).catch(() => ({})),
       fetch("/api/rentas-ebike").then((r) => r.json()).catch(() => ({})),
-      fetch(`/api/turnos?fecha=${dia}`).then((r) => r.json()).catch(() => ({})),
     ]);
-    setTurnos(rt.turnos || []);
     if (rc.error) {
       setError(
         rc.error.includes("cobros")
@@ -152,56 +149,6 @@ export default function CierreDia() {
           {fecha === hoyPanama() && porCobrar.monto > 0 && (
             <div className="card" style={{ padding: "12px 16px", marginBottom: 18, background: "var(--warning-bg)", borderColor: "transparent", color: "var(--warning-text)", fontSize: 14 }}>
               <strong>Por cobrar: {dinero(porCobrar.monto)}</strong> en {porCobrar.rentas} {porCobrar.rentas === 1 ? "renta activa" : "rentas activas"}. Se cobran desde el Panel.
-            </div>
-          )}
-
-          {turnos.length > 0 && (
-            <div className="card" style={{ padding: 0, overflowX: "auto", marginBottom: 18 }}>
-              <div style={{ padding: "14px 16px 4px", fontWeight: 600 }}>Turnos</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-                <thead>
-                  <tr style={{ textAlign: "left", color: "var(--text-muted)", fontSize: 12.5 }}>
-                    {["Quién", "Horario", "Fondo", "Efectivo cobrado", "Salidas", "Debía haber", "Contó", "Diferencia"].map((h) => (
-                      <th key={h} style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)", fontWeight: 600 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {turnos.map((t) => {
-                    const cerrado = Boolean(t.cerrado_en);
-                    const dif = cerrado ? Number(t.diferencia) : null;
-                    const celda = { padding: "10px 14px", borderBottom: "1px solid var(--border)" };
-                    return (
-                      <tr key={t.id}>
-                        <td style={celda}>
-                          {t.usuario_nombre}
-                          {t.cerrado_por_nombre && t.cerrado_por_nombre !== t.usuario_nombre && <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>cerrado por {t.cerrado_por_nombre}</div>}
-                        </td>
-                        <td style={celda}>{hora(t.abierto_en)} – {cerrado ? hora(t.cerrado_en) : "abierto"}</td>
-                        <td style={celda}>
-                          {dinero(t.fondo_inicial)}
-                          {t.diferencia_al_recibir !== null && Math.abs(Number(t.diferencia_al_recibir)) >= 0.005 && (
-                            <div style={{ fontSize: 11.5, color: "var(--warning-text)", fontWeight: 600 }}>
-                              recibió {Number(t.diferencia_al_recibir) > 0 ? "+" : "−"}{dinero(Math.abs(Number(t.diferencia_al_recibir)))} vs. lo entregado
-                            </div>
-                          )}
-                        </td>
-                        <td style={celda}>{cerrado ? dinero(t.efectivo_cobrado) : "—"}</td>
-                        <td style={celda}>
-                          {Number(t.salidas) > 0 ? dinero(t.salidas) : "—"}
-                          {t.salidas_nota && <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{t.salidas_nota}</div>}
-                        </td>
-                        <td style={celda}>{cerrado ? dinero(t.efectivo_esperado) : "—"}</td>
-                        <td style={celda}>{cerrado ? dinero(t.efectivo_contado) : "—"}</td>
-                        <td style={{ ...celda, fontWeight: 600, color: dif === null ? undefined : Math.abs(dif) < 0.005 ? "#1E7A38" : "var(--warning-text)" }}>
-                          {dif === null ? "—" : Math.abs(dif) < 0.005 ? "Cuadra" : `${dif > 0 ? "Sobran" : "Faltan"} ${dinero(Math.abs(dif))}`}
-                          {t.nota_cierre && <div style={{ fontSize: 11.5, color: "var(--text-muted)", fontWeight: 400 }}>{t.nota_cierre}</div>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
             </div>
           )}
 
