@@ -6,10 +6,10 @@ import { StaffProvider } from "@/lib/staffContext";
 import { colorDeStaff, primerNombre, inicial } from "@/lib/colorStaff";
 
 // Usuario activo siempre visible (13-oct-2026): si nadie toca la pantalla en
-// 20 minutos, el panel se bloquea solo. La última actividad se comparte
+// 5 horas, el panel se bloquea solo. La última actividad se comparte
 // entre pestañas (localStorage); si el navegador no lo permite, cada pestaña
 // cuenta por su lado.
-const MINUTOS_INACTIVIDAD = 20;
+const MINUTOS_INACTIVIDAD = 300; // 5 horas
 const CLAVE_ACTIVIDAD = "flow-ultima-actividad";
 function leerActividad() {
   try {
