@@ -20,7 +20,7 @@ create table if not exists cobros (
   metodo text not null check (metodo in ('efectivo', 'tarjeta', 'yappy')),
   -- Últimos 4 dígitos del número de autorización del recibo BAC (tarjeta)
   -- o de la confirmación de Yappy. Null en efectivo.
-  autorizacion_ult4 text check (autorizacion_ult4 is null or autorizacion_ult4 ~ '^[0-9]{4}$'),
+  autorizacion_ult4 text check (autorizacion_ult4 is null or autorizacion_ult4 ~ '^[0-9A-Z]{4}$'),
   cobrado_por_id uuid,
   cobrado_por_nombre text,
   -- Si alguien corrige el método después (ej. marcaron Tarjeta y fue

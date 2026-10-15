@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { METODOS_COBRO, METODO_COBRO_LABELS, metodoPideAutorizacion, normalizarAutorizacion } from "@/lib/cobros";
+import { METODOS_COBRO, METODO_COBRO_LABELS, metodoPideAutorizacion, normalizarAutorizacion, limpiarAutorizacion } from "@/lib/cobros";
 
 // Cuadre de pagos (13-oct-2026): ventana "Cobrar" del Panel. El monto ya
 // viene lleno con lo que falta; tres botones grandes para el método; los 4
@@ -135,20 +135,23 @@ export default function CobroModal({ renta, pendiente, nombreStaff, aviso, onCer
           <div style={{ background: "var(--highlight-bg)", border: "1px solid var(--highlight-border)", borderRadius: 12, padding: "14px 16px" }}>
             <div className="field" style={{ margin: 0 }}>
               <label htmlFor="cobro-aut">
-                {metodo === "yappy" ? "Últimos 4 de la confirmación de Yappy" : "Últimos 4 del número de autorización"}
+                {metodo === "yappy" ? "Últimos 4 de la confirmación de Yappy" : "Últimos 4 de la autorización"}
               </label>
               <input
                 id="cobro-aut"
-                inputMode="numeric"
+                inputMode="text"
                 autoComplete="off"
-                maxLength={6}
-                placeholder="0000"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={12}
+                placeholder="A7K2"
                 value={autorizacion}
-                onChange={(e) => setAutorizacion(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => setAutorizacion(limpiarAutorizacion(e.target.value))}
                 style={{ width: 170, fontSize: 24, letterSpacing: "0.35em", fontVariantNumeric: "tabular-nums" }}
               />
               <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
-                {metodo === "yappy" ? "En la captura de Yappy, número de confirmación." : 'En el recibo BAC, línea "AUTO.:".'}
+                {metodo === "yappy" ? "En la captura de Yappy, número de confirmación." : 'En el recibo BAC, línea "AUTO.:" — números o letras.'}
               </div>
             </div>
           </div>

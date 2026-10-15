@@ -1,4 +1,5 @@
 import "./globals.css";
+import IndicadorCarga from "@/components/IndicadorCarga";
 
 export const metadata = {
   title: "Flow Rentals — control de motos",
@@ -6,5 +7,11 @@ export const metadata = {
 };
 
 export default function AppLayout({ children }) {
-  return <>{children}</>;
+  // Ruedita en el botón y barra arriba mientras carga (14-oct-2026).
+  return (
+    <>
+      <IndicadorCarga color="#0071E3" />
+      {children}
+    </>
+  );
 }

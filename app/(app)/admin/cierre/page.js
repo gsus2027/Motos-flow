@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useStaffActual } from "@/lib/staffContext";
-import { estadoCobro, claveRenta, METODOS_COBRO, METODO_COBRO_LABELS, metodoPideAutorizacion, normalizarAutorizacion } from "@/lib/cobros";
+import { estadoCobro, claveRenta, METODOS_COBRO, METODO_COBRO_LABELS, metodoPideAutorizacion, normalizarAutorizacion, limpiarAutorizacion } from "@/lib/cobros";
 
 // Cierre del día (cuadre de pagos, 13-oct-2026): lo que se cobró en un día,
 // separado por método, para comparar contra el datáfono (tarjeta), las
@@ -94,7 +94,7 @@ export default function CierreDia() {
   async function guardarCorreccion() {
     const { cobro, metodo, autorizacion } = corrigiendo;
     if (metodoPideAutorizacion(metodo) && !normalizarAutorizacion(autorizacion) && !(metodo === cobro.metodo && cobro.autorizacion_ult4)) {
-      setCorrigiendo((c) => ({ ...c, error: "Escribe los últimos 4 dígitos." }));
+      setCorrigiendo((c) => ({ ...c, error: "Escribe los últimos 4 números o letras." }));
       return;
     }
     setCorrigiendo((c) => ({ ...c, guardando: true, error: "" }));
@@ -245,14 +245,17 @@ export default function CierreDia() {
             </div>
             {metodoPideAutorizacion(corrigiendo.metodo) && (
               <div className="field" style={{ margin: 0 }}>
-                <label htmlFor="corregir-aut">Últimos 4 {corrigiendo.metodo === "yappy" ? "de la confirmación de Yappy" : "del número de autorización"}</label>
+                <label htmlFor="corregir-aut">Últimos 4 {corrigiendo.metodo === "yappy" ? "de la confirmación de Yappy" : "de la autorización"} (números o letras)</label>
                 <input
                   id="corregir-aut"
-                  inputMode="numeric"
-                  maxLength={6}
+                  inputMode="text"
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  maxLength={12}
                   placeholder={corrigiendo.metodo === corrigiendo.cobro.metodo && corrigiendo.cobro.autorizacion_ult4 ? corrigiendo.cobro.autorizacion_ult4 : "0000"}
                   value={corrigiendo.autorizacion}
-                  onChange={(e) => setCorrigiendo((c) => ({ ...c, autorizacion: e.target.value.replace(/\D/g, "") }))}
+                  onChange={(e) => setCorrigiendo((c) => ({ ...c, autorizacion: limpiarAutorizacion(e.target.value) }))}
                   style={{ width: 170, fontSize: 22, letterSpacing: "0.3em" }}
                 />
               </div>
