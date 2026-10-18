@@ -1,3 +1,4 @@
+import VehiculosContrato from "./VehiculosContrato";
 import { calcularTarifa } from "@/lib/pricing";
 
 function formatoDia(iso) {
@@ -25,7 +26,7 @@ function Campo({ label, valor }) {
   );
 }
 
-export default function ContratoTexto({ renta, moto, t, tarifas }) {
+export default function ContratoTexto({ renta, moto, t, tarifas, grupo, idioma }) {
   const resultado = calcularTarifa({
     tipoMoto: moto?.tipo,
     fechaEntrega: renta.fechaEntrega,
@@ -82,6 +83,7 @@ export default function ContratoTexto({ renta, moto, t, tarifas }) {
         <p key={i} style={{ margin: "2px 0" }}>{ex.nombre}: ${Number(ex.precio).toFixed(2)} {t.usd}</p>
       ))}
       <p style={{ margin: "6px 0", fontWeight: 700 }}>{t.totalEstimado} ${totalFinal.toFixed(2)} {t.usd}</p>
+      <VehiculosContrato grupo={grupo} idioma={idioma} tipo="moto" />
 
       <h2 style={{ fontSize: 15, margin: "22px 0 6px" }}>{t.s2}</h2>
       <p style={{ margin: "6px 0" }}>{t.s2intro}</p>

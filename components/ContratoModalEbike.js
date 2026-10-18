@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { TEXTOS_CONTRATO_EBIKE } from "@/lib/textos";
 import ContratoTextoEbike from "./ContratoTextoEbike";
 import ImagenPrivada from "./ImagenPrivada";
@@ -11,6 +12,18 @@ function formatoDia(iso) {
 
 export default function ContratoModalEbike({ renta, ebike, onCerrar }) {
   const idioma = renta.idioma === "en" ? "en" : "es";
+  // 18-oct-2026: si el contrato tiene más de un vehículo, se muestran todos.
+  const [grupo, setGrupo] = useState(null);
+  useEffect(() => {
+    let vivo = true;
+    fetch(`/api/contrato?tipo=ebike&id=${renta.contrato_id || renta.id}`)
+      .then((r) => r.json())
+      .then((d) => vivo && setGrupo(Array.isArray(d.rentas) ? d.rentas : null))
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [renta.id, renta.contrato_id]);
   const t = TEXTOS_CONTRATO_EBIKE[idioma];
 
   const rentaProps = {
@@ -34,7 +47,7 @@ export default function ContratoModalEbike({ renta, ebike, onCerrar }) {
           <button className="btn-secondary" onClick={onCerrar}>Cerrar</button>
         </div>
 
-        <ContratoTextoEbike renta={rentaProps} ebike={ebike} t={t} />
+        <ContratoTextoEbike renta={rentaProps} ebike={ebike} t={t} grupo={grupo} idioma={idioma} />
 
         <div style={{ display: "flex", gap: 40, marginTop: 44, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 220 }}>
