@@ -4,7 +4,6 @@ import ContratoModal from "@/components/ContratoModal";
 import ContratoModalEbike from "@/components/ContratoModalEbike";
 import { agruparPorContrato } from "@/lib/contratoMultiple";
 import ImagenPrivada from "@/components/ImagenPrivada";
-import MisComisiones from "@/components/MisComisiones";
 import CobroModal from "@/components/CobroModal";
 import { useStaffActual } from "@/lib/staffContext";
 import { estadoCobro, claveRenta, METODO_COBRO_LABELS } from "@/lib/cobros";
@@ -314,64 +313,78 @@ export default function Panel() {
 
   // 18-oct-2026: tarjeta de una renta en curso. Dentro de un contrato con
   // varios vehículos (enGrupo), el cobro y el contrato van en el encabezado del grupo.
+  // 18-oct-2026: tarjeta en dos partes — arriba los datos (cliente,
+  // vehículo, cuándo devuelve) y abajo una barra de acciones ordenada: el
+  // cobro primero, luego el resto en botones del mismo tamaño y en una sola
+  // línea de texto cada uno.
   function tarjetaRenta(r, { enGrupo = false } = {}) {
+    const cobro = cobroDe(r);
     return (
-            <div key={`${r._tipo}-${r.id}`} className="card" style={{ padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 4 }} />
-              <div style={{ minWidth: 140 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{r.cliente}</div>
-                <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
-                {r.atendido_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
-                <div style={{ fontSize: 12, color: estadoExtras(r.extras).color }}>{estadoExtras(r.extras).texto}</div>
-                <EstadoCobro cobro={cobroDe(r)} />
-                <div style={{ fontSize: 12.5, marginTop: 3 }}>
-                  Total: <strong>{dinero(r.tarifa_total)}</strong>
-                  {Number(r.dias_extendidos) > 0 && <Etiqueta bg="var(--highlight-bg)" fg="var(--highlight-text)">+{r.dias_extendidos} {Number(r.dias_extendidos) === 1 ? "día" : "días"}</Etiqueta>}
-                  {r.tarifa_original !== null && r.tarifa_original !== undefined && (
-                    <span title={`Original: ${dinero(r.tarifa_original)} — ${r.ajuste_motivo || ""}${r.ajustado_por ? ` (${r.ajustado_por})` : ""}`}>
-                      <Etiqueta bg="var(--warning-bg)" fg="var(--warning-text)">ajustado</Etiqueta>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <EtiquetaTipo tipo={r._tipo} />
-              <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>
-                {r._vehiculo}
-                {r.agregado_por && <div style={{ fontSize: 12 }}>agregada por {r.agregado_por}</div>}
-              </div>
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devuelve</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
-                </div>
-                <Badge estado={estadoRenta(r)} />
-                {!enGrupo && cobroDe(r).pendiente > 0 && (
-                  <button className="btn-primary" style={{ padding: "10px 20px", fontSize: 15 }} onClick={() => setCobrando({ renta: r, pendiente: cobroDe(r).pendiente, luegoDevolver: false })}>
-                    Cobrar {dinero(cobroDe(r).pendiente)}
-                  </button>
-                )}
-                {!enGrupo && (
-                  <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
-                    Contrato ({r.idioma === "en" ? "EN" : "ES"})
-                  </button>
-                )}
-                {!enGrupo && (
-                  <button className="btn-secondary" style={{ borderColor: "var(--amber)", color: "var(--amber)", fontWeight: 600, whiteSpace: "nowrap" }} onClick={() => abrirAgregar(r)}>
-                    ➕ Otra {r._tipo === "ebike" ? "e-bike" : "moto"}
-                  </button>
-                )}
-                {r._tipo === "moto" && (
-                  <button className="btn-secondary" onClick={() => abrirCambioMoto(r)}>🔄 Cambiar moto</button>
-                )}
-                <button className="btn-secondary" onClick={() => abrirExtension(r)}>📅 Extender días</button>
-                {esAdmin && (
-                  <button className="btn-secondary" onClick={() => abrirAjuste(r)}>✏️ Ajustar tarifa</button>
-                )}
-                <button className="btn-secondary" onClick={() => iniciarDevolucion(r)}>Marcar devuelta</button>
-              </div>
+      <div key={`${r._tipo}-${r.id}`} className="card renta-card">
+        <div className="renta-info">
+          <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 52, height: 52, objectFit: "cover", borderRadius: 8, flex: "none" }} />
+          <div className="renta-cliente">
+            <div style={{ fontWeight: 600, fontSize: 16 }}>{r.cliente}</div>
+            <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+              {r.cedula}
+              {r.atendido_por ? ` · Atendió: ${r.atendido_por}` : ""}
             </div>
+            <div style={{ fontSize: 12, color: estadoExtras(r.extras).color }}>{estadoExtras(r.extras).texto}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+              <EstadoCobro cobro={cobro} />
+              <span style={{ fontSize: 12.5, marginTop: 4 }}>
+                Total: <strong>{dinero(r.tarifa_total)}</strong>
+                {Number(r.dias_extendidos) > 0 && <Etiqueta bg="var(--highlight-bg)" fg="var(--highlight-text)">+{r.dias_extendidos} {Number(r.dias_extendidos) === 1 ? "día" : "días"}</Etiqueta>}
+                {r.tarifa_original !== null && r.tarifa_original !== undefined && (
+                  <span title={`Original: ${dinero(r.tarifa_original)} — ${r.ajuste_motivo || ""}${r.ajustado_por ? ` (${r.ajustado_por})` : ""}`}>
+                    <Etiqueta bg="var(--warning-bg)" fg="var(--warning-text)">ajustado</Etiqueta>
+                  </span>
+                )}
+              </span>
+            </div>
+          </div>
+          <div className="renta-vehiculo">
+            <EtiquetaTipo tipo={r._tipo} />
+            <div style={{ fontSize: 14, fontWeight: 500, marginTop: 4 }}>{r._vehiculo}</div>
+            {r.agregado_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>agregada por {r.agregado_por}</div>}
+          </div>
+          <div className="renta-devuelve">
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devuelve</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
+            <Badge estado={estadoRenta(r)} />
+          </div>
+        </div>
+        <div className="renta-acciones">
+          {!enGrupo && cobro.pendiente > 0 && (
+            <button className="btn-primary renta-cobrar" onClick={() => setCobrando({ renta: r, pendiente: cobro.pendiente, luegoDevolver: false })}>
+              Cobrar {dinero(cobro.pendiente)}
+            </button>
+          )}
+          <div className="renta-botones">
+            {!enGrupo && (
+              <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
+                📄 Contrato ({r.idioma === "en" ? "EN" : "ES"})
+              </button>
+            )}
+            {!enGrupo && (
+              <button className="btn-secondary renta-otra" onClick={() => abrirAgregar(r)}>
+                ➕ Otra {r._tipo === "ebike" ? "e-bike" : "moto"}
+              </button>
+            )}
+            {r._tipo === "moto" && (
+              <button className="btn-secondary" onClick={() => abrirCambioMoto(r)}>🔄 Cambiar moto</button>
+            )}
+            <button className="btn-secondary" onClick={() => abrirExtension(r)}>📅 Extender días</button>
+            {esAdmin && (
+              <button className="btn-secondary" onClick={() => abrirAjuste(r)}>✏️ Ajustar tarifa</button>
+            )}
+            <button className="btn-secondary" onClick={() => iniciarDevolucion(r)}>✅ Marcar devuelta</button>
+          </div>
+        </div>
+      </div>
     );
   }
+
 
   if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
@@ -386,7 +399,6 @@ export default function Panel() {
       <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Panel</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 26px" }}>Estado actual de la flota (motos + ebikes) y las rentas en curso.</p>
 
-      <MisComisiones />
 
       <div style={{ display: "flex", gap: 14, marginBottom: 30, flexWrap: "wrap" }}>
         <Stat label="Vehículos en flota" value={totalVehiculos} />

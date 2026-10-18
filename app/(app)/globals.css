@@ -166,3 +166,22 @@ button, input, select, textarea { font-family: inherit; }
 @media print {
   .no-print { display: none !important; }
 }
+
+/* Panel: tarjeta de renta en curso (18-oct-2026) — datos arriba, acciones
+   abajo en botones parejos. */
+.renta-card { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.renta-info { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.renta-cliente { flex: 1 1 240px; min-width: 0; }
+.renta-vehiculo { flex: 0 1 200px; }
+.renta-devuelve { margin-left: auto; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.renta-acciones { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 14px; }
+.renta-acciones .btn-primary.renta-cobrar { padding: 10px 22px; font-size: 15px; white-space: nowrap; flex: 0 0 auto; align-self: flex-start; min-height: 40px; }
+.renta-botones { flex: 1 1 420px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.renta-botones .btn-secondary { width: 100%; white-space: nowrap; padding: 9px 12px; font-size: 13.5px; text-align: center; }
+.renta-botones .btn-secondary.renta-otra { border-color: var(--amber); color: var(--amber); font-weight: 600; }
+@media (max-width: 640px) {
+  .renta-devuelve { margin-left: 0; text-align: left; align-items: flex-start; flex-direction: row; gap: 10px; align-items: center; }
+  .renta-acciones .btn-primary.renta-cobrar { width: 100%; }
+  .renta-botones { grid-template-columns: 1fr 1fr; flex-basis: 100%; }
+  .renta-botones .btn-secondary { white-space: normal; }
+}

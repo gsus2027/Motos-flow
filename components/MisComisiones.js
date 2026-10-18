@@ -13,7 +13,7 @@ function dinero(n) {
 // Tarjeta del Panel: cuánto lleva en comisiones el miembro conectado en el
 // periodo abierto, cuánto lleva hoy, su progreso hacia la meta del día y
 // el detalle por día. Se oculta para quien no cobra comisión.
-export default function MisComisiones() {
+export default function MisComisiones({ vacio } = {}) {
   const [datos, setDatos] = useState(null);
   const [verTodo, setVerTodo] = useState(false);
 
@@ -24,7 +24,10 @@ export default function MisComisiones() {
       .catch(() => setDatos({ error: true }));
   }, []);
 
-  if (!datos || datos.error || datos.comisiona === false) return null;
+  if (!datos) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
+  if (datos.error || datos.comisiona === false) {
+    return vacio ? <div className="card" style={{ padding: "18px 20px", maxWidth: 620, color: "var(--text-muted)", fontSize: 14.5 }}>{vacio}</div> : null;
+  }
 
   const { mio, periodo, config, hoy } = datos;
   const dias = mio?.dias || [];
