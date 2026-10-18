@@ -33,6 +33,7 @@ const NAV = [
   ["/admin/calendario", "Calendario"],
   ["/admin/historial", "Historial"],
   ["/admin/cierre", "Cierre del día"],
+  ["/admin/mis-comisiones", "🏆 Mis comisiones"],
 ];
 const NAV_ADMIN = [
   ["/admin/flota", "Flota de motos"],
@@ -42,7 +43,7 @@ const NAV_ADMIN = [
   ["/admin/equipo", "Equipo"],
   ["/admin/respaldos", "Respaldos"],
   ["/admin/reportes", "💰 Dinero"],
-  ["/admin/comisiones", "🏆 Comisiones"],
+  ["/admin/comisiones", "🏆 Comisiones del equipo"],
 ];
 
 export default function AdminLayout({ children }) {
