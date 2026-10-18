@@ -103,6 +103,52 @@ export async function POST(req) {
   const monto = r2(body.monto);
   const tabla = TABLA_POR_TIPO[rentaTipo];
 
+  // 18-oct-2026: cobrar varias rentas de un mismo contrato en un solo pago
+  // (mismo método y misma autorización). El monto se reparte en orden, a
+  // cada renta lo que le falta. Body: { rentas: [{ rentaTipo, rentaId }], monto, metodo, autorizacion }.
+  if (Array.isArray(body.rentas) && body.rentas.length > 0) {
+    if (!METODOS_COBRO.includes(metodo)) return NextResponse.json({ error: "Elige cómo pagó: efectivo, tarjeta o Yappy." }, { status: 400 });
+    if (!(monto > 0)) return NextResponse.json({ error: "Escribe el monto que recibiste." }, { status: 400 });
+    const autG = validarAutorizacion(metodo, autorizacion);
+    if (autG.error) return NextResponse.json({ error: autG.error }, { status: 400 });
+    const pendientes = [];
+    for (const it of body.rentas.slice(0, 10)) {
+      const t = TABLA_POR_TIPO[it?.rentaTipo];
+      if (!t || !it.rentaId) return NextResponse.json({ error: "Falta indicar la renta." }, { status: 400 });
+      const { data: r } = await db.from(t).select("id, tarifa_total").eq("id", it.rentaId).maybeSingle();
+      if (!r) return NextResponse.json({ error: "Una de las rentas no existe." }, { status: 404 });
+      const { data: prev } = await db.from("cobros").select("monto").eq("renta_tipo", it.rentaTipo).eq("renta_id", it.rentaId);
+      const pag = r2((prev || []).reduce((s2, c) => s2 + Number(c.monto || 0), 0));
+      pendientes.push({ rentaTipo: it.rentaTipo, rentaId: it.rentaId, falta: r2(Math.max(0, Number(r.tarifa_total || 0) - pag)) });
+    }
+    const totalFalta = r2(pendientes.reduce((s2, p) => s2 + p.falta, 0));
+    if (monto > totalFalta + 0.001) {
+      return NextResponse.json(
+        { error: totalFalta > 0 ? `A este contrato solo le faltan $${totalFalta.toFixed(2)}. Revisa el monto.` : "Este contrato ya está pagado completo." },
+        { status: 409 }
+      );
+    }
+    let resto = monto;
+    const filas = [];
+    for (const p of pendientes) {
+      const parte = r2(Math.min(p.falta, resto));
+      if (parte <= 0) continue;
+      resto = r2(resto - parte);
+      filas.push({
+        renta_tipo: p.rentaTipo,
+        renta_id: p.rentaId,
+        monto: parte,
+        metodo,
+        autorizacion_ult4: autG.ult4,
+        cobrado_por_id: staff.id,
+        cobrado_por_nombre: staff.nombre,
+      });
+    }
+    const { data: creados, error: errG } = await db.from("cobros").insert(filas).select();
+    if (errG) return NextResponse.json({ error: errG.message }, { status: 500 });
+    return NextResponse.json({ cobro: creados?.[0] || null, cobros: creados || [] });
+  }
+
   if (!tabla || !rentaId) return NextResponse.json({ error: "Falta indicar la renta." }, { status: 400 });
   if (!METODOS_COBRO.includes(metodo)) return NextResponse.json({ error: "Elige cómo pagó: efectivo, tarjeta o Yappy." }, { status: 400 });
   if (!(monto > 0)) return NextResponse.json({ error: "Escribe el monto que recibiste." }, { status: 400 });

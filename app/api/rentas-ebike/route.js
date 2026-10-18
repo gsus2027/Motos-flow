@@ -3,8 +3,9 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { calcularTarifaEbike, calcularExtras, fechaHoyPanama } from "@/lib/pricing";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
-import { enviarCorreoContratoFirmado, enviarCorreoDevolucion } from "@/lib/email";
+import { enviarCorreoContratoFirmado, enviarCorreoDevolucion, enviarContratoActualizado } from "@/lib/email";
 import { manejarAjusteRenta } from "@/lib/ajustesRenta";
+import { agregarVehiculoAContrato, rentasDelContrato } from "@/lib/contratoMultiple";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -151,6 +152,28 @@ export async function PATCH(req) {
   if (!id) return NextResponse.json({ error: "Falta el id de la renta." }, { status: 400 });
 
   const db = supabaseServer();
+
+  // Un contrato con varios vehículos (18-oct-2026): agregar otro al contrato
+  // de esta renta, o solo calcular cuánto costaría (ver lib/contratoMultiple.js).
+  if (body.accion === "agregarVehiculo" || body.accion === "precioAgregarVehiculo") {
+    const r = await agregarVehiculoAContrato({
+      db,
+      tipo: "ebike",
+      rentaId: id,
+      vehiculoId: body.vehiculoId,
+      sesion,
+      soloPrecio: body.accion === "precioAgregarVehiculo",
+    });
+    if (r.status === 200 && r.body.renta) {
+      try {
+        const todas = await rentasDelContrato({ db, tipo: "ebike", renta: r.body.renta });
+        await enviarContratoActualizado({ tipo: "ebike", rentas: todas });
+      } catch (err) {
+        console.error("[email] No se pudo enviar el contrato actualizado:", err);
+      }
+    }
+    return NextResponse.json(r.body, { status: r.status });
+  }
 
   // Extender días (todo el equipo) o ajustar tarifa (solo admin)
   const ajuste = await manejarAjusteRenta({ db, tabla: "rentas_ebike", tipo: "ebike", body, sesion });

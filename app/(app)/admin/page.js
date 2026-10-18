@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import ContratoModal from "@/components/ContratoModal";
 import ContratoModalEbike from "@/components/ContratoModalEbike";
+import { agruparPorContrato } from "@/lib/contratoMultiple";
 import ImagenPrivada from "@/components/ImagenPrivada";
 import MisComisiones from "@/components/MisComisiones";
 import CobroModal from "@/components/CobroModal";
@@ -115,6 +116,7 @@ export default function Panel() {
   const [contratoVisible, setContratoVisible] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
   const [cambiandoMoto, setCambiandoMoto] = useState(null); // { renta, motosDisponibles, elegida, error, guardando }
+  const [agregando, setAgregando] = useState(null); // 18-oct-2026: { renta, disponibles, elegida, precio, calculando, error, guardando }
   const [extendiendo, setExtendiendo] = useState(null); // { renta, fecha, calculo, calculando, error, guardando }
   const [ajustando, setAjustando] = useState(null); // { renta, nuevoTotal, motivo, error, guardando }
   // Cuadre de pagos (13-oct-2026): cobros de las rentas activas, agrupados
@@ -204,6 +206,40 @@ export default function Panel() {
     cargar();
   }
 
+  // ---- Agregar otra moto / e-bike al mismo contrato (18-oct-2026) ----
+  async function abrirAgregar(r) {
+    setAgregando({ renta: r, disponibles: null, elegida: "", precio: null, calculando: false, error: "", guardando: false });
+    const url = r._tipo === "ebike" ? "/api/ebikes?disponibles=1" : "/api/motos?disponibles=1";
+    const res = await fetch(url).then((x) => x.json()).catch(() => ({}));
+    const lista = (r._tipo === "ebike" ? res.ebikes : res.motos) || [];
+    setAgregando((c) => (c && c.renta.id === r.id ? { ...c, disponibles: lista } : c));
+  }
+  async function elegirAgregar(vehiculoId) {
+    const r = agregando.renta;
+    setAgregando((c) => ({ ...c, elegida: vehiculoId, precio: null, calculando: true, error: "" }));
+    const res = await fetch(endpointDe(r), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: r.id, accion: "precioAgregarVehiculo", vehiculoId }),
+    }).then((x) => x.json()).catch(() => ({ error: "No se pudo calcular. Revisa tu conexión." }));
+    setAgregando((c) => (c && c.elegida === vehiculoId ? { ...c, calculando: false, precio: res.precio || null, error: res.error || "" } : c));
+  }
+  async function confirmarAgregar() {
+    if (!agregando?.elegida || !agregando.precio) return;
+    setAgregando((c) => ({ ...c, guardando: true, error: "" }));
+    const res = await fetch(endpointDe(agregando.renta), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: agregando.renta.id, accion: "agregarVehiculo", vehiculoId: agregando.elegida }),
+    }).then((x) => x.json()).catch(() => ({ error: "No se pudo guardar. Revisa tu conexión." }));
+    if (res.error) {
+      setAgregando((c) => ({ ...c, guardando: false, error: res.error }));
+      return;
+    }
+    setAgregando(null);
+    cargar();
+  }
+
   // ---- Extender días (todo el equipo) ----
   function endpointDe(r) {
     return r._tipo === "ebike" ? "/api/rentas-ebike" : "/api/rentas";
@@ -276,6 +312,67 @@ export default function Panel() {
     cargar();
   }
 
+  // 18-oct-2026: tarjeta de una renta en curso. Dentro de un contrato con
+  // varios vehículos (enGrupo), el cobro y el contrato van en el encabezado del grupo.
+  function tarjetaRenta(r, { enGrupo = false } = {}) {
+    return (
+            <div key={`${r._tipo}-${r.id}`} className="card" style={{ padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 4 }} />
+              <div style={{ minWidth: 140 }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{r.cliente}</div>
+                <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
+                {r.atendido_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
+                <div style={{ fontSize: 12, color: estadoExtras(r.extras).color }}>{estadoExtras(r.extras).texto}</div>
+                <EstadoCobro cobro={cobroDe(r)} />
+                <div style={{ fontSize: 12.5, marginTop: 3 }}>
+                  Total: <strong>{dinero(r.tarifa_total)}</strong>
+                  {Number(r.dias_extendidos) > 0 && <Etiqueta bg="var(--highlight-bg)" fg="var(--highlight-text)">+{r.dias_extendidos} {Number(r.dias_extendidos) === 1 ? "día" : "días"}</Etiqueta>}
+                  {r.tarifa_original !== null && r.tarifa_original !== undefined && (
+                    <span title={`Original: ${dinero(r.tarifa_original)} — ${r.ajuste_motivo || ""}${r.ajustado_por ? ` (${r.ajustado_por})` : ""}`}>
+                      <Etiqueta bg="var(--warning-bg)" fg="var(--warning-text)">ajustado</Etiqueta>
+                    </span>
+                  )}
+                </div>
+              </div>
+              <EtiquetaTipo tipo={r._tipo} />
+              <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>
+                {r._vehiculo}
+                {r.agregado_por && <div style={{ fontSize: 12 }}>agregada por {r.agregado_por}</div>}
+              </div>
+              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devuelve</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
+                </div>
+                <Badge estado={estadoRenta(r)} />
+                {!enGrupo && cobroDe(r).pendiente > 0 && (
+                  <button className="btn-primary" style={{ padding: "10px 20px", fontSize: 15 }} onClick={() => setCobrando({ renta: r, pendiente: cobroDe(r).pendiente, luegoDevolver: false })}>
+                    Cobrar {dinero(cobroDe(r).pendiente)}
+                  </button>
+                )}
+                {!enGrupo && (
+                  <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
+                    Contrato ({r.idioma === "en" ? "EN" : "ES"})
+                  </button>
+                )}
+                {!enGrupo && (
+                  <button className="btn-secondary" style={{ borderColor: "var(--amber)", color: "var(--amber)", fontWeight: 600, whiteSpace: "nowrap" }} onClick={() => abrirAgregar(r)}>
+                    ➕ Otra {r._tipo === "ebike" ? "e-bike" : "moto"}
+                  </button>
+                )}
+                {r._tipo === "moto" && (
+                  <button className="btn-secondary" onClick={() => abrirCambioMoto(r)}>🔄 Cambiar moto</button>
+                )}
+                <button className="btn-secondary" onClick={() => abrirExtension(r)}>📅 Extender días</button>
+                {esAdmin && (
+                  <button className="btn-secondary" onClick={() => abrirAjuste(r)}>✏️ Ajustar tarifa</button>
+                )}
+                <button className="btn-secondary" onClick={() => iniciarDevolucion(r)}>Marcar devuelta</button>
+              </div>
+            </div>
+    );
+  }
+
   if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   const rentasActivas = rentas.filter((r) => r.estado !== "devuelta").sort((a, b) => a.fecha_prevista.localeCompare(b.fecha_prevista));
@@ -306,52 +403,45 @@ export default function Panel() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {rentasActivas.map((r) => (
-            <div key={`${r._tipo}-${r.id}`} className="card" style={{ padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-              <ImagenPrivada path={r.foto_carnet_url} alt="Carnet" style={{ width: 46, height: 46, objectFit: "cover", borderRadius: 4 }} />
-              <div style={{ minWidth: 140 }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{r.cliente}</div>
-                <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{r.cedula}</div>
-                {r.atendido_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Atendió: {r.atendido_por}</div>}
-                <div style={{ fontSize: 12, color: estadoExtras(r.extras).color }}>{estadoExtras(r.extras).texto}</div>
-                <EstadoCobro cobro={cobroDe(r)} />
-                <div style={{ fontSize: 12.5, marginTop: 3 }}>
-                  Total: <strong>{dinero(r.tarifa_total)}</strong>
-                  {Number(r.dias_extendidos) > 0 && <Etiqueta bg="var(--highlight-bg)" fg="var(--highlight-text)">+{r.dias_extendidos} {Number(r.dias_extendidos) === 1 ? "día" : "días"}</Etiqueta>}
-                  {r.tarifa_original !== null && r.tarifa_original !== undefined && (
-                    <span title={`Original: ${dinero(r.tarifa_original)} — ${r.ajuste_motivo || ""}${r.ajustado_por ? ` (${r.ajustado_por})` : ""}`}>
-                      <Etiqueta bg="var(--warning-bg)" fg="var(--warning-text)">ajustado</Etiqueta>
-                    </span>
-                  )}
+          {agruparPorContrato(rentasActivas).map((grupo) => {
+            if (grupo.length === 1) return tarjetaRenta(grupo[0]);
+            const r0 = grupo[0];
+            const total = grupo.reduce((n, x) => n + Number(x.tarifa_total || 0), 0);
+            const pendiente = Math.round(grupo.reduce((n, x) => n + cobroDe(x).pendiente, 0) * 100) / 100;
+            const pagado = Math.round(grupo.reduce((n, x) => n + cobroDe(x).pagado, 0) * 100) / 100;
+            const nombreTipo = r0._tipo === "ebike" ? "e-bikes" : "motos";
+            return (
+              <div key={`grupo-${r0._tipo}-${r0.id}`} style={{ border: "1.5px solid var(--highlight-border)", background: "#F7FBFF", borderRadius: 20, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "2px 6px 4px" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>
+                      {r0.cliente} · <span style={{ color: "var(--highlight-text)" }}>contrato con {grupo.length} {nombreTipo}</span>
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+                      {r0.cedula} · Total del contrato <strong style={{ color: "var(--text)" }}>{dinero(total)}</strong>
+                    </div>
+                    {!cobroDe(r0).sinDatos && (
+                      <EstadoCobro cobro={{ pagado, pendiente, cobros: grupo.flatMap((x) => cobroDe(x).cobros), sinDatos: false }} />
+                    )}
+                  </div>
+                  <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    {pendiente > 0 && (
+                      <button className="btn-primary" style={{ padding: "10px 20px", fontSize: 15 }} onClick={() => setCobrando({ renta: r0, grupo, pendiente, luegoDevolver: false })}>
+                        Cobrar {dinero(pendiente)}
+                      </button>
+                    )}
+                    <button className="btn-secondary" onClick={() => setContratoVisible(r0)}>
+                      Contrato ({r0.idioma === "en" ? "EN" : "ES"})
+                    </button>
+                    <button className="btn-secondary" style={{ borderColor: "var(--amber)", color: "var(--amber)", fontWeight: 600, whiteSpace: "nowrap" }} onClick={() => abrirAgregar(r0)}>
+                      ➕ Otra {r0._tipo === "ebike" ? "e-bike" : "moto"}
+                    </button>
+                  </div>
                 </div>
+                {grupo.map((x) => tarjetaRenta(x, { enGrupo: true }))}
               </div>
-              <EtiquetaTipo tipo={r._tipo} />
-              <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>{r._vehiculo}</div>
-              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devuelve</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
-                </div>
-                <Badge estado={estadoRenta(r)} />
-                {cobroDe(r).pendiente > 0 && (
-                  <button className="btn-primary" style={{ padding: "10px 20px", fontSize: 15 }} onClick={() => setCobrando({ renta: r, pendiente: cobroDe(r).pendiente, luegoDevolver: false })}>
-                    Cobrar {dinero(cobroDe(r).pendiente)}
-                  </button>
-                )}
-                <button className="btn-secondary" onClick={() => setContratoVisible(r)}>
-                  Contrato ({r.idioma === "en" ? "EN" : "ES"})
-                </button>
-                {r._tipo === "moto" && (
-                  <button className="btn-secondary" onClick={() => abrirCambioMoto(r)}>🔄 Cambiar moto</button>
-                )}
-                <button className="btn-secondary" onClick={() => abrirExtension(r)}>📅 Extender días</button>
-                {esAdmin && (
-                  <button className="btn-secondary" onClick={() => abrirAjuste(r)}>✏️ Ajustar tarifa</button>
-                )}
-                <button className="btn-secondary" onClick={() => iniciarDevolucion(r)}>Marcar devuelta</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -508,6 +598,78 @@ export default function Panel() {
         );
       })()}
 
+      {agregando && (() => {
+        const r = agregando.renta;
+        const esEbike = r._tipo === "ebike";
+        const nombre = (v) => (esEbike ? `Ebike ${v.numero}` : `${v.placa} — ${v.modelo}`);
+        const elegido = (agregando.disponibles || []).find((v) => v.id === agregando.elegida);
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(20,18,15,.6)", zIndex: 40, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "26px 16px", overflowY: "auto" }}>
+            <div className="card" style={{ padding: 24, maxWidth: 460, width: "100%", background: "var(--bg)" }}>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Agregar otra {esEbike ? "e-bike" : "moto"} al contrato</div>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 16px" }}>
+                Contrato de {r.cliente} · {formatoDia(r.fecha_entrega)} → {formatoDia(r.fecha_prevista)}
+              </p>
+              {agregando.disponibles === null ? (
+                <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>Cargando {esEbike ? "e-bikes" : "motos"} disponibles…</p>
+              ) : agregando.disponibles.length === 0 ? (
+                <p style={{ fontSize: 13.5, color: "var(--text-muted)" }}>No hay ninguna {esEbike ? "e-bike" : "moto"} disponible en este momento.</p>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>{esEbike ? "E-bikes" : "Motos"} disponibles:</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14, maxHeight: 260, overflowY: "auto" }}>
+                    {agregando.disponibles.map((v) => (
+                      <label
+                        key={v.id}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, cursor: "pointer",
+                          border: agregando.elegida === v.id ? "1.5px solid var(--amber)" : "1px solid var(--border)",
+                          background: agregando.elegida === v.id ? "var(--highlight-bg)" : undefined,
+                        }}
+                      >
+                        <input type="radio" name="vehiculo-agregar" checked={agregando.elegida === v.id} onChange={() => elegirAgregar(v.id)} />
+                        <span style={{ fontSize: 14 }}>{nombre(v)}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {agregando.calculando && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>Calculando el precio…</p>}
+                  {agregando.precio && elegido && (
+                    <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginBottom: 12, fontSize: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>{nombre(elegido)} · {agregando.precio.dias} {agregando.precio.dias === 1 ? "día" : "días"}</span>
+                        <span>{dinero(agregando.precio.base)}</span>
+                      </div>
+                      {!esEbike && (
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span>Cobertura {r.cobertura === "premium" ? "premium" : "básica"} (igual que el contrato)</span>
+                          <span>{dinero(agregando.precio.cobertura)}</span>
+                        </div>
+                      )}
+                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 16, marginTop: 6 }}>
+                        <span>Se agrega al contrato</span>
+                        <span>{dinero(agregando.precio.total)}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--panel-2)", padding: "10px 12px", borderRadius: 8, marginBottom: 16 }}>
+                    ℹ️ Se usan los datos, la firma y las fechas del contrato; el cliente no vuelve a llenar nada. El contrato se actualiza solo con todos los vehículos y el total nuevo, y se le reenvía por correo. Los extras (casco, candado…) se agregan aparte, como hoy.
+                  </div>
+                </>
+              )}
+              {agregando.error && (
+                <div style={{ marginBottom: 14, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 10, borderRadius: 6, fontSize: 13 }}>{agregando.error}</div>
+              )}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn-secondary" onClick={() => setAgregando(null)}>Cancelar</button>
+                <button className="btn-primary" disabled={!agregando.precio || agregando.guardando} onClick={confirmarAgregar}>
+                  {agregando.guardando ? "Agregando…" : agregando.precio ? `Agregar ${esEbike ? "e-bike" : "moto"} · ${dinero(agregando.precio.total)}` : `Agregar ${esEbike ? "e-bike" : "moto"}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {cambiandoMoto && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(20,18,15,.6)", zIndex: 40, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "26px 16px", overflowY: "auto" }}>
           <div className="card" style={{ padding: 24, maxWidth: 420, width: "100%", background: "var(--bg)" }}>
@@ -571,6 +733,7 @@ export default function Panel() {
       {cobrando && (
         <CobroModal
           renta={cobrando.renta}
+          grupo={cobrando.grupo}
           pendiente={cobrando.pendiente}
           nombreStaff={staffActual?.nombre}
           aviso={cobrando.luegoDevolver ? `A esta renta le falta cobrar ${dinero(cobrando.pendiente)} antes de marcarla devuelta.` : ""}

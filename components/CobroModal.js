@@ -31,7 +31,7 @@ function dinero(n) {
  * @param {(cobro) => void} props.onCobrado
  * @param {{ texto: string, onClick: () => void }} [props.accionSecundaria] - ej. "Devolver sin cobrar".
  */
-export default function CobroModal({ renta, pendiente, nombreStaff, aviso, onCerrar, onCobrado, accionSecundaria }) {
+export default function CobroModal({ renta, pendiente, nombreStaff, aviso, onCerrar, onCobrado, accionSecundaria, grupo }) {
   const [monto, setMonto] = useState(pendiente > 0 ? Number(pendiente).toFixed(2) : "");
   const [metodo, setMetodo] = useState("");
   const [autorizacion, setAutorizacion] = useState("");
@@ -52,7 +52,12 @@ export default function CobroModal({ renta, pendiente, nombreStaff, aviso, onCer
     const res = await fetch("/api/cobros", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rentaTipo: renta._tipo, rentaId: renta.id, monto: montoNum, metodo, autorizacion }),
+      // 18-oct-2026: con `grupo` (contrato con varios vehículos) se cobran todos en un solo pago.
+      body: JSON.stringify(
+        grupo && grupo.length > 1
+          ? { rentas: grupo.map((r) => ({ rentaTipo: r._tipo, rentaId: r.id })), monto: montoNum, metodo, autorizacion }
+          : { rentaTipo: renta._tipo, rentaId: renta.id, monto: montoNum, metodo, autorizacion }
+      ),
     })
       .then((x) => x.json())
       .catch(() => ({ error: "No se pudo guardar. Revisa tu conexión." }));
@@ -70,7 +75,7 @@ export default function CobroModal({ renta, pendiente, nombreStaff, aviso, onCer
         <div>
           <div id="cobro-titulo" style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 21 }}>Cobrar</div>
           <div style={{ fontSize: 14, color: "var(--text-muted)", marginTop: 2 }}>
-            {renta.cliente} — {renta._vehiculo}
+            {renta.cliente} — {grupo && grupo.length > 1 ? `contrato con ${grupo.length} vehículos (${grupo.map((r) => r._vehiculo).join(", ")})` : renta._vehiculo}
           </div>
         </div>
 
