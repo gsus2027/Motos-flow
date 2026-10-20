@@ -12,44 +12,44 @@ function dinero(n) {
 }
 const r2 = (n) => Math.round(Number(n || 0) * 100) / 100;
 const OVERLAY = { position: "fixed", inset: 0, background: "rgba(20,18,15,.6)", zIndex: 40, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "26px 16px", overflowY: "auto" };
+const FORMAS = [["efectivo", "Efectivo"], ["yappy", "Yappy"], ["transferencia", "Transferencia"], ["otro", "Otro"]];
+const nombreForma = (f) => (FORMAS.find(([k]) => k === f) || [null, f || "—"])[1];
+const TAG = { fontSize: 11, fontWeight: 600, padding: "1px 6px", borderRadius: 6, marginLeft: 6 };
+const TH = { padding: "8px 6px", fontWeight: 500 };
+const TD = { padding: "10px 6px" };
 
-function Stat({ label, value, color }) {
+function Stat({ label, value, color, fondo }) {
   return (
-    <div className="card" style={{ padding: "14px 18px", flex: "1 1 160px" }}>
-      <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{label}</div>
+    <div className="card" style={{ padding: "14px 18px", flex: "1 1 150px", background: fondo }}>
+      <div style={{ fontSize: 12.5, color: color || "var(--text-muted)" }}>{label}</div>
       <div style={{ fontFamily: "var(--font-heading)", fontSize: 24, fontWeight: 600, color: color || "var(--text)", marginTop: 2 }}>{value}</div>
     </div>
   );
 }
 
-// Totales de un miembro contando solo los días hasta la fecha de corte
-// (el cálculo es por día, así que filtrar días da el monto exacto).
-function hastaCorte(m, corte) {
-  const dias = m.dias.filter((d) => d.fecha <= corte);
-  return {
-    ...m,
-    dias,
-    rentado: r2(dias.reduce((a, d) => a + d.rentado, 0)),
-    comision: r2(dias.reduce((a, d) => a + d.comision, 0)),
-    bonos: r2(dias.reduce((a, d) => a + d.bono, 0)),
-    metasCumplidas: dias.filter((d) => d.llegoMeta).length,
-    total: r2(dias.reduce((a, d) => a + d.total, 0)),
-  };
+function EstadoDia({ d }) {
+  if (d.pendiente <= 0) return <span style={{ ...TAG, background: "#DCEAE1", color: "#245939" }}>pagado</span>;
+  if (d.pagado > 0) return <span style={{ ...TAG, background: "#FAEEDA", color: "#854F0B" }}>falta {dinero(d.pendiente)}</span>;
+  return null;
 }
 
-function DetalleMiembro({ m }) {
+// Detalle de un miembro: sus días (con lo que ya está pagado) y sus pagos.
+function DetalleMiembro({ m, pagos }) {
+  const suyos = pagos.filter((p) => p.staff_id === m.staffId);
   return (
     <div style={{ padding: "4px 0 12px 34px" }}>
+      {m.dias.length === 0 && <div style={{ fontSize: 13, color: "var(--text-muted)", padding: "6px 0" }}>Sin rentas con comisión.</div>}
       {m.dias.map((d) => (
-        <div key={d.fecha} style={{ borderTop: "1px solid var(--border)", padding: "8px 0" }}>
+        <div key={d.fecha} style={{ borderTop: "1px solid var(--border)", padding: "8px 0", opacity: d.pendiente <= 0 ? 0.6 : 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, fontWeight: 600, gap: 8 }}>
             <span>
               {formatoDia(d.fecha)}
-              {d.llegoMeta && <span style={{ fontSize: 11, background: "#DCEAE1", color: "#245939", padding: "1px 6px", borderRadius: 6, marginLeft: 6 }}>meta + {dinero(d.bono)}</span>}
+              {d.llegoMeta && <span style={{ ...TAG, background: "#DCEAE1", color: "#245939" }}>meta + {dinero(d.bono)}</span>}
+              <EstadoDia d={d} />
             </span>
             <span>{dinero(d.rentado)} → {dinero(d.total)}</span>
           </div>
-          {d.rentas.map((r) => (
+          {(d.rentas || []).map((r) => (
             <div key={`${r.tipo}-${r.id}`} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--text-muted)", padding: "2px 0", gap: 8 }}>
               <span>{r.cliente} · {r.vehiculo}</span>
               <span>{dinero(r.monto)}</span>
@@ -57,31 +57,42 @@ function DetalleMiembro({ m }) {
           ))}
         </div>
       ))}
+      {suyos.length > 0 && (
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 4 }}>
+          <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginBottom: 4 }}>Pagos a {m.nombre}</div>
+          {suyos.map((p) => (
+            <div key={p.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "2px 0", gap: 8, textDecoration: p.anulado ? "line-through" : "none", color: p.anulado ? "var(--text-muted)" : "inherit" }}>
+              <span>{formatoDia(p.fecha)} · {nombreForma(p.forma)}{p.nota ? ` · ${p.nota}` : ""}</span>
+              <span>{dinero(p.monto)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function TablaMiembros({ miembros, abierto, setAbierto, mostrarRanking = true }) {
+function TablaSaldos({ miembros, pagos, abierto, setAbierto, onPagar }) {
   if (miembros.length === 0) {
-    return <div style={{ padding: "14px 0", color: "var(--text-muted)", fontSize: 14 }}>No hay comisiones en este periodo.</div>;
+    return <div style={{ padding: "14px 0", color: "var(--text-muted)", fontSize: 14 }}>Todavía no hay comisiones.</div>;
   }
   return (
     <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 560 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 640 }}>
         <thead>
           <tr style={{ color: "var(--text-muted)", fontSize: 12.5, textAlign: "left" }}>
-            <th style={{ padding: "8px 6px", fontWeight: 500, width: 34 }}>{mostrarRanking ? "#" : ""}</th>
-            <th style={{ padding: "8px 6px", fontWeight: 500 }}>Miembro</th>
-            <th style={{ padding: "8px 6px", fontWeight: 500 }}>Rentado</th>
-            <th style={{ padding: "8px 6px", fontWeight: 500 }}>Comisión</th>
-            <th style={{ padding: "8px 6px", fontWeight: 500 }}>Metas</th>
-            <th style={{ padding: "8px 6px", fontWeight: 500 }}>Total</th>
-            <th style={{ padding: "8px 6px" }} />
+            <th style={{ ...TH, width: 34 }}>#</th>
+            <th style={TH}>Miembro</th>
+            <th style={TH}>Rentado</th>
+            <th style={TH}>Ganado</th>
+            <th style={TH}>Pagado</th>
+            <th style={TH}>Por pagar</th>
+            <th style={TH} />
           </tr>
         </thead>
         <tbody>
           {miembros.map((m, i) => (
-            <FilaMiembro key={m.staffId} m={m} i={i} abierto={abierto === m.staffId} onToggle={() => setAbierto(abierto === m.staffId ? null : m.staffId)} mostrarRanking={mostrarRanking} />
+            <FilaSaldo key={m.staffId} m={m} i={i} pagos={pagos} abierto={abierto === m.staffId} onToggle={() => setAbierto(abierto === m.staffId ? null : m.staffId)} onPagar={() => onPagar(m)} />
           ))}
         </tbody>
       </table>
@@ -89,17 +100,26 @@ function TablaMiembros({ miembros, abierto, setAbierto, mostrarRanking = true })
   );
 }
 
-function FilaMiembro({ m, i, abierto, onToggle, mostrarRanking }) {
+function FilaSaldo({ m, i, pagos, abierto, onToggle, onPagar }) {
   return (
     <>
       <tr style={{ borderTop: "1px solid var(--border)" }}>
-        <td style={{ padding: "10px 6px" }}>{mostrarRanking ? (i === 0 ? "🏆" : i + 1) : ""}</td>
-        <td style={{ padding: "10px 6px", fontWeight: 600 }}>{m.nombre}</td>
-        <td style={{ padding: "10px 6px" }}>{dinero(m.rentado)}</td>
-        <td style={{ padding: "10px 6px" }}>{dinero(m.comision)}</td>
-        <td style={{ padding: "10px 6px" }}>{m.metasCumplidas > 0 ? `${m.metasCumplidas} · ${dinero(m.bonos)}` : "—"}</td>
-        <td style={{ padding: "10px 6px", fontWeight: 600 }}>{dinero(m.total)}</td>
-        <td style={{ padding: "10px 6px", textAlign: "right" }}>
+        <td style={TD}>{i === 0 && m.ganado > 0 ? "🏆" : i + 1}</td>
+        <td style={{ ...TD, fontWeight: 600 }}>{m.nombre}</td>
+        <td style={TD}>{dinero(m.rentado)}</td>
+        <td style={TD}>
+          {dinero(m.ganado)}
+          {m.metasCumplidas > 0 && <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{m.metasCumplidas} metas · {dinero(m.bonos)}</div>}
+        </td>
+        <td style={TD}>{dinero(m.pagado)}</td>
+        <td style={{ ...TD, fontWeight: 600, color: m.saldo > 0 ? "#8A5A03" : m.saldo < 0 ? "var(--danger)" : "var(--text-muted)" }}>
+          {dinero(m.saldo)}
+          {m.saldo < 0 && <div style={{ fontSize: 11.5, fontWeight: 400 }}>pagado de más</div>}
+        </td>
+        <td style={{ ...TD, textAlign: "right", whiteSpace: "nowrap" }}>
+          <button className="btn-primary" style={{ fontSize: 12.5, padding: "5px 12px", marginRight: 6 }} disabled={m.saldo <= 0} onClick={onPagar}>
+            Pagar
+          </button>
           <button className="btn-secondary" style={{ fontSize: 12.5, padding: "5px 12px" }} onClick={onToggle}>
             {abierto ? "Ocultar" : "Ver detalle"}
           </button>
@@ -107,22 +127,183 @@ function FilaMiembro({ m, i, abierto, onToggle, mostrarRanking }) {
       </tr>
       {abierto && (
         <tr>
-          <td colSpan={7}><DetalleMiembro m={m} /></td>
+          <td colSpan={7}><DetalleMiembro m={m} pagos={pagos} /></td>
         </tr>
       )}
     </>
   );
 }
 
+function VentanaPago({ pago, setPago, onConfirmar }) {
+  const { miembro } = pago;
+  const monto = r2(pago.monto);
+  const valido = Number.isFinite(monto) && monto > 0 && monto <= miembro.saldo;
+  const queda = r2(miembro.saldo - (Number.isFinite(monto) ? monto : 0));
+  const cambiar = (k, v) => setPago((p) => ({ ...p, [k]: v, error: "" }));
+  const atajos = [50, 100].filter((n) => n < miembro.saldo);
+
+  function enviar() {
+    if (!(Number.isFinite(monto) && monto > 0)) return setPago((p) => ({ ...p, error: "Escribe un monto mayor que $0." }));
+    if (monto > miembro.saldo) return setPago((p) => ({ ...p, error: `No puede pasar de ${dinero(miembro.saldo)}.` }));
+    onConfirmar();
+  }
+
+  return (
+    <div style={OVERLAY}>
+      <div className="card" style={{ padding: 24, maxWidth: 420, width: "100%", background: "var(--bg)" }}>
+        <div style={{ fontWeight: 600, fontSize: 16 }}>Pagar comisión a {miembro.nombre}</div>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "4px 0 16px" }}>Tiene {dinero(miembro.saldo)} por cobrar.</p>
+
+        <div className="field" style={{ marginBottom: 8 }}>
+          <label>Monto a pagar hoy</label>
+          <input type="number" min="0.01" step="0.01" inputMode="decimal" value={pago.monto} onChange={(e) => cambiar("monto", e.target.value)} autoFocus />
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+          {atajos.map((n) => (
+            <button key={n} type="button" className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px" }} onClick={() => cambiar("monto", String(n))}>${n}</button>
+          ))}
+          <button type="button" className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px" }} onClick={() => cambiar("monto", miembro.saldo.toFixed(2))}>
+            Todo ({dinero(miembro.saldo)})
+          </button>
+        </div>
+
+        <div className="field" style={{ marginBottom: 10 }}>
+          <label>Forma de pago</label>
+          <select value={pago.forma} onChange={(e) => cambiar("forma", e.target.value)}>
+            {FORMAS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}
+          </select>
+        </div>
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label>Nota (opcional)</label>
+          <input maxLength={200} placeholder="Adelanto de quincena" value={pago.nota} onChange={(e) => cambiar("nota", e.target.value)} />
+        </div>
+
+        <div style={{ background: "var(--panel-2)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, display: "flex", justifyContent: "space-between", fontSize: 13.5 }}>
+          <span style={{ color: "var(--text-muted)" }}>Después de este pago le quedan</span>
+          <strong>{valido ? dinero(queda) : "—"}</strong>
+        </div>
+
+        {pago.error && <div style={{ marginBottom: 14, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 10, borderRadius: 6, fontSize: 13 }}>{pago.error}</div>}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button className="btn-secondary" onClick={() => setPago(null)}>Cancelar</button>
+          <button className="btn-primary" disabled={pago.guardando} onClick={enviar}>
+            {pago.guardando ? "Guardando…" : valido ? `Registrar pago de ${dinero(monto)}` : "Registrar pago"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HistorialPagos({ pagos, staff, onAnular }) {
+  const [filtro, setFiltro] = useState("");
+  const [confirmar, setConfirmar] = useState(null);
+  const lista = filtro ? pagos.filter((p) => p.staff_id === filtro) : pagos;
+  const conPagos = staff.filter((s) => pagos.some((p) => p.staff_id === s.id));
+
+  return (
+    <div className="card" style={{ padding: "16px 20px", marginBottom: 22 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: 0 }}>Historial de pagos</h2>
+        {conPagos.length > 0 && (
+          <select value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ width: 170 }}>
+            <option value="">Todos</option>
+            {conPagos.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+          </select>
+        )}
+      </div>
+      {lista.length === 0 ? (
+        <div style={{ color: "var(--text-muted)", fontSize: 14, padding: "6px 0" }}>Todavía no se ha registrado ningún pago.</div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 560 }}>
+            <thead>
+              <tr style={{ color: "var(--text-muted)", fontSize: 12.5, textAlign: "left" }}>
+                <th style={TH}>Fecha</th><th style={TH}>Miembro</th><th style={TH}>Monto</th><th style={TH}>Forma</th><th style={TH}>Nota</th><th style={TH} />
+              </tr>
+            </thead>
+            <tbody>
+              {lista.map((p) => (
+                <tr key={p.id} style={{ borderTop: "1px solid var(--border)", color: p.anulado ? "var(--text-muted)" : "inherit" }}>
+                  <td style={TD}>{formatoDia(p.fecha)}</td>
+                  <td style={TD}>{p.nombre}</td>
+                  <td style={{ ...TD, fontWeight: 600, textDecoration: p.anulado ? "line-through" : "none" }}>{dinero(p.monto)}</td>
+                  <td style={TD}>{nombreForma(p.forma)}</td>
+                  <td style={{ ...TD, fontSize: 13 }}>
+                    {p.nota || ""}
+                    <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
+                      {p.anulado ? `Anulado${p.anulado_por ? ` por ${p.anulado_por}` : ""}` : p.pagado_por ? `Registrado por ${p.pagado_por}` : ""}
+                    </div>
+                  </td>
+                  <td style={{ ...TD, textAlign: "right", whiteSpace: "nowrap" }}>
+                    {!p.anulado && (confirmar === p.id ? (
+                      <>
+                        <span style={{ fontSize: 12.5, marginRight: 6 }}>¿Anular?</span>
+                        <button className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px", marginRight: 4 }} onClick={() => { setConfirmar(null); onAnular(p); }}>Sí</button>
+                        <button className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px" }} onClick={() => setConfirmar(null)}>No</button>
+                      </>
+                    ) : (
+                      <button className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px" }} onClick={() => setConfirmar(p.id)}>Anular</button>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "10px 0 0" }}>
+        &quot;Anular&quot; es para corregir un pago registrado por error: el monto vuelve al saldo del miembro.
+      </p>
+    </div>
+  );
+}
+
+// Periodos cerrados con el sistema anterior ("Pagar y cerrar periodo").
+// Solo lectura: ya están pagados y no cuentan en los saldos.
+function PeriodosAnteriores({ periodos }) {
+  const [abierto, setAbierto] = useState(null);
+  if (!periodos.length) return null;
+  return (
+    <div className="card" style={{ padding: "16px 20px" }}>
+      <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 8px" }}>Periodos pagados (sistema anterior)</h2>
+      {periodos.map((p) => (
+        <div key={p.id} style={{ borderTop: "1px solid var(--border)" }}>
+          <button
+            type="button"
+            onClick={() => setAbierto(abierto === p.id ? null : p.id)}
+            style={{ width: "100%", display: "flex", justifyContent: "space-between", gap: 10, padding: "10px 0", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text)", textAlign: "left", flexWrap: "wrap" }}
+          >
+            <span style={{ fontWeight: 600 }}>{formatoDia(p.inicio)} – {formatoDia(p.fin)}</span>
+            <span style={{ color: "var(--text-muted)" }}>
+              {dinero(p.total)} · pagado {formatoDia(p.pagado_en)}{p.pagado_por ? ` por ${p.pagado_por}` : ""} {abierto === p.id ? "▲" : "▼"}
+            </span>
+          </button>
+          {abierto === p.id && (
+            <div style={{ paddingBottom: 10 }}>
+              {(p.detalle || []).map((m) => (
+                <div key={m.staffId} style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "3px 0 3px 12px" }}>
+                  <span>{m.nombre}</span>
+                  <span style={{ color: "var(--text-muted)" }}>{dinero(m.rentado)} rentado → <strong style={{ color: "var(--text)" }}>{dinero(m.total)}</strong></span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ComisionesContenido() {
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState("");
+  const [aviso, setAviso] = useState("");
   const [abierto, setAbierto] = useState(null);
   const [cfg, setCfg] = useState({ tasa: "", metaDiaria: "", bono: "" });
   const [cfgMsg, setCfgMsg] = useState("");
-  const [cerrando, setCerrando] = useState(null); // { corte, error, guardando }
-  const [periodoAbierto, setPeriodoAbierto] = useState(null);
-  const [miembroHist, setMiembroHist] = useState(null);
+  const [pago, setPago] = useState(null); // { miembro, monto, forma, nota, error, guardando }
 
   async function cargar() {
     const d = await fetch("/api/comisiones?vista=admin").then((r) => r.json()).catch(() => ({ error: "No se pudo cargar. Revisa tu conexión." }));
@@ -136,77 +317,83 @@ function ComisionesContenido() {
   }
   useEffect(() => { cargar(); }, []);
 
+  async function enviar(method, body) {
+    return fetch("/api/comisiones", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then((r) => r.json())
+      .catch(() => ({ error: "No se pudo guardar. Revisa tu conexión." }));
+  }
+
   async function guardarConfig() {
     setCfgMsg("");
-    const res = await fetch("/api/comisiones", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "config", tasa: Number(cfg.tasa), metaDiaria: Number(cfg.metaDiaria), bono: Number(cfg.bono) }),
-    }).then((r) => r.json()).catch(() => ({ error: "No se pudo guardar." }));
+    const res = await enviar("PATCH", { accion: "config", tasa: Number(cfg.tasa), metaDiaria: Number(cfg.metaDiaria), bono: Number(cfg.bono) });
     if (res.error) return setCfgMsg(res.error);
     setCfgMsg("Guardado ✓");
     cargar();
   }
 
   async function cambiarComisiona(s, valor) {
-    const res = await fetch("/api/comisiones", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "comisiona", staffId: s.id, comisiona: valor }),
-    }).then((r) => r.json()).catch(() => ({ error: "No se pudo guardar." }));
+    const res = await enviar("PATCH", { accion: "comisiona", staffId: s.id, comisiona: valor });
     if (res.error) return setError(res.error);
     cargar();
   }
 
-  async function confirmarCierre() {
-    setCerrando((c) => ({ ...c, guardando: true, error: "" }));
-    const res = await fetch("/api/comisiones", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "cerrar", fechaCorte: cerrando.corte }),
-    }).then((r) => r.json()).catch(() => ({ error: "No se pudo cerrar. Revisa tu conexión." }));
+  async function confirmarPago() {
+    setPago((p) => ({ ...p, guardando: true, error: "" }));
+    const res = await enviar("POST", { accion: "pagar", staffId: pago.miembro.staffId, monto: r2(pago.monto), forma: pago.forma, nota: pago.nota });
     if (res.error) {
-      setCerrando((c) => ({ ...c, guardando: false, error: res.error }));
+      setPago((p) => ({ ...p, guardando: false, error: res.error }));
       return;
     }
-    setCerrando(null);
-    setAbierto(null);
+    setAviso(`Pago de ${dinero(pago.monto)} a ${pago.miembro.nombre} registrado. Le quedan ${dinero(res.saldo)}.`);
+    setPago(null);
+    cargar();
+  }
+
+  async function anular(p) {
+    const res = await enviar("POST", { accion: "anular", pagoId: p.id });
+    if (res.error) return setError(res.error);
+    setAviso(`Pago de ${dinero(p.monto)} a ${p.nombre} anulado.`);
     cargar();
   }
 
   if (error && !datos) return <div className="card" style={{ padding: 24, color: "var(--danger)" }}>{error}</div>;
   if (!datos) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
-  const { equipo, periodo, staff, historial, hoy } = datos;
-  const previa = cerrando
-    ? equipo.miembros.map((m) => hastaCorte(m, cerrando.corte)).filter((m) => m.dias.length > 0)
-    : [];
-  const totalPrevia = r2(previa.reduce((a, m) => a + m.total, 0));
+  const { equipo, staff, pagos, periodosAnteriores, inicio } = datos;
 
   return (
     <div>
       <h1 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 26, margin: 0 }}>Comisiones</h1>
       <p style={{ color: "var(--text-muted)", fontSize: 14.5, margin: "6px 0 22px" }}>
-        Periodo abierto: {formatoDia(periodo.inicio)} – hoy. Cada renta cuenta el día de entrega, por su total cobrado.
+        Cada miembro tiene un saldo que corre siempre: lo ganado menos lo pagado. Puedes pagarle a cualquiera, cuando quieras y el monto que quieras.
       </p>
 
       {error && <div style={{ marginBottom: 14, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 10, borderRadius: 6, fontSize: 13 }}>{error}</div>}
+      {aviso && <div style={{ marginBottom: 14, background: "#DCEAE1", color: "#245939", padding: 10, borderRadius: 6, fontSize: 13 }}>{aviso}</div>}
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 22 }}>
         <Stat label="Rentado por el equipo" value={dinero(equipo.rentado)} />
-        <Stat label="Comisiones por pagar" value={dinero(equipo.total)} color="#8A5A03" />
+        <Stat label="Comisiones ganadas" value={dinero(equipo.ganado)} />
+        <Stat label="Ya pagado" value={dinero(equipo.pagado)} />
+        <Stat label="Por pagar" value={dinero(equipo.saldo)} color="#8A5A03" fondo="#FAEEDA" />
         <Stat label="Sin comisión (web u otros)" value={dinero(equipo.sinComision)} />
       </div>
 
       <div className="card" style={{ padding: "16px 20px", marginBottom: 22 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 8 }}>
-          <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: 0 }}>Periodo actual</h2>
-          <button className="btn-primary" disabled={equipo.miembros.length === 0} onClick={() => setCerrando({ corte: hoy, error: "", guardando: false })}>
-            💵 Pagar y cerrar periodo
-          </button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 8 }}>
+          <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: 0 }}>Saldo de cada miembro</h2>
+          <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>Desde {formatoDia(inicio)}</span>
         </div>
-        <TablaMiembros miembros={equipo.miembros} abierto={abierto} setAbierto={setAbierto} />
+        <TablaSaldos
+          miembros={equipo.miembros}
+          pagos={pagos}
+          abierto={abierto}
+          setAbierto={setAbierto}
+          onPagar={(m) => { setAviso(""); setPago({ miembro: m, monto: "", forma: "efectivo", nota: "", error: "", guardando: false }); }}
+        />
       </div>
+
+      <HistorialPagos pagos={pagos} staff={staff} onAnular={anular} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 22 }}>
         <div className="card" style={{ padding: "16px 20px" }}>
@@ -223,7 +410,7 @@ function ComisionesContenido() {
             </div>
           ))}
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
-            Los cambios aplican al periodo abierto. Los periodos ya pagados no cambian.
+            Al cambiar las reglas se recalcula lo ganado desde {formatoDia(inicio)}. Los pagos ya hechos no cambian, así que el saldo de cada miembro puede subir o bajar.
           </div>
           <button className="btn-secondary" onClick={guardarConfig}>Guardar reglas</button>
           {cfgMsg && <span style={{ marginLeft: 10, fontSize: 13, color: cfgMsg.includes("✓") ? "#245939" : "var(--danger)" }}>{cfgMsg}</span>}
@@ -241,75 +428,9 @@ function ComisionesContenido() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: "16px 20px" }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 8px" }}>Historial de periodos pagados</h2>
-        {historial.length === 0 ? (
-          <div style={{ color: "var(--text-muted)", fontSize: 14, padding: "6px 0" }}>Todavía no se ha pagado ningún periodo.</div>
-        ) : (
-          historial.map((p) => (
-            <div key={p.id} style={{ borderTop: "1px solid var(--border)" }}>
-              <button
-                type="button"
-                onClick={() => { setPeriodoAbierto(periodoAbierto === p.id ? null : p.id); setMiembroHist(null); }}
-                style={{ width: "100%", display: "flex", justifyContent: "space-between", gap: 10, padding: "10px 0", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text)", textAlign: "left", flexWrap: "wrap" }}
-              >
-                <span style={{ fontWeight: 600 }}>{formatoDia(p.inicio)} – {formatoDia(p.fin)}</span>
-                <span style={{ color: "var(--text-muted)" }}>
-                  {dinero(p.total)} · pagado {formatoDia(p.pagado_en)}{p.pagado_por ? ` por ${p.pagado_por}` : ""} {periodoAbierto === p.id ? "▲" : "▼"}
-                </span>
-              </button>
-              {periodoAbierto === p.id && (
-                <div style={{ paddingBottom: 10 }}>
-                  <TablaMiembros miembros={p.detalle || []} abierto={miembroHist} setAbierto={setMiembroHist} />
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+      <PeriodosAnteriores periodos={periodosAnteriores || []} />
 
-      {cerrando && (
-        <div style={OVERLAY}>
-          <div className="card" style={{ padding: 24, maxWidth: 460, width: "100%", background: "var(--bg)" }}>
-            <div style={{ fontWeight: 600, fontSize: 16 }}>Pagar y cerrar periodo</div>
-            <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "4px 0 16px" }}>
-              Se pagan las rentas con entrega desde {formatoDia(periodo.inicio)} hasta la fecha de corte. El periodo siguiente empieza en cero.
-            </p>
-            <div className="field" style={{ marginBottom: 14 }}>
-              <label>Fecha de corte</label>
-              <input type="date" value={cerrando.corte} max={hoy} min={periodo.inicio} onChange={(e) => e.target.value && setCerrando((c) => ({ ...c, corte: e.target.value, error: "" }))} />
-            </div>
-            <div style={{ background: "var(--panel-2)", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
-              {previa.length === 0 ? (
-                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>No hay comisiones hasta esa fecha.</div>
-              ) : (
-                <>
-                  {previa.map((m) => (
-                    <div key={m.staffId} style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, padding: "3px 0" }}>
-                      <span>{m.nombre}</span><span>{dinero(m.total)}</span>
-                    </div>
-                  ))}
-                  <div style={{ borderTop: "1px solid var(--border)", marginTop: 6, paddingTop: 6, display: "flex", justifyContent: "space-between", fontWeight: 600 }}>
-                    <span>Total a pagar</span><span>{dinero(totalPrevia)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-            <div style={{ fontSize: 12.5, color: "var(--warning-text)", background: "var(--warning-bg)", borderRadius: 8, padding: "8px 12px", marginBottom: 14 }}>
-              Esto no se puede deshacer. Haz el pago al equipo y luego confirma aquí.
-            </div>
-            {cerrando.error && (
-              <div style={{ marginBottom: 14, background: "var(--danger-bg)", color: "var(--danger-text)", padding: 10, borderRadius: 6, fontSize: 13 }}>{cerrando.error}</div>
-            )}
-            <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn-secondary" onClick={() => setCerrando(null)}>Cancelar</button>
-              <button className="btn-primary" disabled={cerrando.guardando || previa.length === 0} onClick={confirmarCierre}>
-                {cerrando.guardando ? "Guardando…" : `Confirmar pago de ${dinero(totalPrevia)}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {pago && <VentanaPago pago={pago} setPago={setPago} onConfirmar={confirmarPago} />}
     </div>
   );
 }
