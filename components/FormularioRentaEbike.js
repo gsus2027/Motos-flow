@@ -5,6 +5,7 @@ import { calcularTarifaEbike, calcularExtras } from "@/lib/pricing";
 import ContratoTextoEbike from "./ContratoTextoEbike";
 import FirmaPad from "./FirmaPad";
 import PantallaExito from "./PantallaExito";
+import { useVehiculosDisponibles, notaReserva, avisoNoDisponible } from "@/lib/useVehiculosDisponibles";
 
 function hoyISO() {
   const d = new Date();
@@ -12,8 +13,6 @@ function hoyISO() {
 }
 
 export default function FormularioRentaEbike({ onExito }) {
-  const [ebikes, setEbikes] = useState([]);
-  const [cargandoEbikes, setCargandoEbikes] = useState(true);
   const [tarifas, setTarifas] = useState(null);
   const [configExtras, setConfigExtras] = useState(null);
   const [listaStaff, setListaStaff] = useState([]);
@@ -37,6 +36,19 @@ export default function FormularioRentaEbike({ onExito }) {
   const [error, setError] = useState("");
   const [acepto, setAcepto] = useState(false);
   const [firma, setFirma] = useState("");
+  const [avisoVehiculo, setAvisoVehiculo] = useState("");
+  // Ebikes libres en las fechas elegidas (una reserva futura no bloquea la
+  // ebike antes de su fecha).
+  const { lista: ebikes, cargando: cargandoEbikes } = useVehiculosDisponibles({
+    tipo: "ebike",
+    fechaEntrega: form.fechaEntrega,
+    fechaPrevista: form.fechaPrevista,
+    seleccionadoId: form.ebikeId,
+    onPerdido: (e) => {
+      setForm((f) => ({ ...f, ebikeId: "" }));
+      setAvisoVehiculo(avisoNoDisponible(e ? `${form.idioma === "en" ? "E-bike" : "La ebike"} ${e.numero}` : "", form.idioma));
+    },
+  });
 
   const t = TEXTOS_FORM_EBIKE[form.idioma === "en" ? "en" : "es"];
   const tContrato = TEXTOS_CONTRATO_EBIKE[form.idioma === "en" ? "en" : "es"];
@@ -65,13 +77,6 @@ export default function FormularioRentaEbike({ onExito }) {
       .then((r) => r.json())
       .then((d) => setListaStaff(d.staff || []))
       .catch(() => {});
-    fetch("/api/ebikes?disponibles=1")
-      .then((r) => r.json())
-      .then((d) => {
-        setEbikes(d.ebikes || []);
-        setCargandoEbikes(false);
-      })
-      .catch(() => setCargandoEbikes(false));
   }, []);
 
   function set(campo, valor) {
@@ -268,12 +273,13 @@ export default function FormularioRentaEbike({ onExito }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.ebike}</label>
-            <select value={form.ebikeId} onChange={(e) => set("ebikeId", e.target.value)}>
+            <select value={form.ebikeId} onChange={(e) => { set("ebikeId", e.target.value); setAvisoVehiculo(""); }}>
               <option value="">{t.ebikePlaceholder}</option>
               {ebikes.map((e) => (
-                <option key={e.id} value={e.id}>Ebike {e.numero}</option>
+                <option key={e.id} value={e.id}>Ebike {e.numero}{notaReserva(e, form.idioma)}</option>
               ))}
             </select>
+            {avisoVehiculo && <div style={{ fontSize: 13, color: "var(--danger)", marginTop: 6 }}>{avisoVehiculo}</div>}
           </div>
 
           {configExtras?.extras?.length > 0 && (

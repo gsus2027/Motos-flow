@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
+import { filtrarDisponibles, rangoDePedido } from "@/lib/disponibilidad";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +35,13 @@ export async function GET(req) {
   const soloDisponibles = new URL(req.url).searchParams.get("disponibles") === "1";
   if (!soloDisponibles) return NextResponse.json({ motos: data });
 
-  const { data: activas } = await db.from("rentas").select("moto_id").eq("estado", "activa");
-  const ocupadas = new Set((activas || []).map((r) => r.moto_id));
-  return NextResponse.json({ motos: data.filter((m) => !ocupadas.has(m.id)) });
+  // Disponibles en las fechas pedidas (?desde=YYYY-MM-DD&hasta=YYYY-MM-DD,
+  // por defecto hoy). Una reserva futura no bloquea la moto antes de su
+  // fecha: solo se avisa con "reservadaDesde".
+  const { desde, hasta, hoy } = rangoDePedido(req);
+  const { data: activas, error: e2 } = await db.from("rentas").select("id, moto_id, estado, fecha_entrega, fecha_prevista").eq("estado", "activa");
+  if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+  return NextResponse.json({ motos: filtrarDisponibles({ vehiculos: data, rentas: activas, campo: "moto_id", desde, hasta, hoy }) });
 }
 
 // POST: solo staff — agregar una moto nueva

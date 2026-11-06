@@ -6,6 +6,7 @@ import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelim
 import { enviarCorreoContratoFirmado, enviarCorreoDevolucion, enviarContratoActualizado } from "@/lib/email";
 import { manejarAjusteRenta } from "@/lib/ajustesRenta";
 import { agregarVehiculoAContrato, rentasDelContrato } from "@/lib/contratoMultiple";
+import { buscarChoque, mensajeChoque, periodoOcupado, esFecha } from "@/lib/disponibilidad";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -59,15 +60,18 @@ export async function POST(req) {
 
   const db = supabaseServer();
 
-  // Confirmar que la moto sigue disponible (evita doble-renta por carrera)
-  const { data: activa } = await db
-    .from("rentas")
-    .select("id")
-    .eq("moto_id", motoId)
-    .eq("estado", "activa")
-    .maybeSingle();
-  if (activa) {
-    return NextResponse.json({ error: "Esa moto ya no está disponible, elige otra." }, { status: 409 });
+  // Confirmar que la moto está libre EN ESAS FECHAS (una reserva futura
+  // no la bloquea antes de su fecha; evita también doble-renta por carrera)
+  if (!esFecha(fechaEntrega) || !esFecha(fechaPrevista)) {
+    return NextResponse.json({ error: "Las fechas no son válidas." }, { status: 400 });
+  }
+  const hoy = fechaHoyPanama();
+  const choque = await buscarChoque({
+    db, tabla: "rentas", campo: "moto_id", vehiculoId: motoId, hoy,
+    desde: fechaEntrega, hasta: fechaPrevista > fechaEntrega ? fechaPrevista : fechaEntrega,
+  });
+  if (choque) {
+    return NextResponse.json({ error: mensajeChoque(choque, hoy, { idioma: idioma === "en" ? "en" : "es" }) }, { status: 409 });
   }
 
   const { data: moto } = await db.from("motos").select("tipo").eq("id", motoId).maybeSingle();
@@ -203,7 +207,7 @@ export async function PATCH(req) {
   if (accion === "cambiarMoto") {
     if (!nuevoMotoId) return NextResponse.json({ error: "Selecciona la moto de reemplazo." }, { status: 400 });
 
-    const { data: rentaActual } = await db.from("rentas").select("id, moto_id, estado").eq("id", id).maybeSingle();
+    const { data: rentaActual } = await db.from("rentas").select("id, moto_id, estado, fecha_entrega, fecha_prevista").eq("id", id).maybeSingle();
     if (!rentaActual) return NextResponse.json({ error: "Esa renta no existe." }, { status: 404 });
     if (rentaActual.estado === "devuelta") {
       return NextResponse.json({ error: "Esta renta ya fue devuelta, no se puede cambiar la moto." }, { status: 409 });
@@ -215,14 +219,12 @@ export async function PATCH(req) {
     const { data: motoNueva } = await db.from("motos").select("id").eq("id", nuevoMotoId).maybeSingle();
     if (!motoNueva) return NextResponse.json({ error: "Esa moto no existe." }, { status: 404 });
 
-    const { data: ocupada } = await db
-      .from("rentas")
-      .select("id")
-      .eq("moto_id", nuevoMotoId)
-      .eq("estado", "activa")
-      .maybeSingle();
-    if (ocupada) {
-      return NextResponse.json({ error: "Esa moto ya está en otra renta activa, elige otra." }, { status: 409 });
+    // La moto nueva tiene que estar libre en los días de esta renta.
+    const hoy = fechaHoyPanama();
+    const periodo = periodoOcupado(rentaActual, hoy);
+    const choque = await buscarChoque({ db, tabla: "rentas", campo: "moto_id", vehiculoId: nuevoMotoId, desde: periodo.inicio, hasta: periodo.fin, hoy });
+    if (choque) {
+      return NextResponse.json({ error: mensajeChoque(choque, hoy) }, { status: 409 });
     }
 
     const { data, error } = await db
