@@ -7,6 +7,7 @@ import ContratoTexto from "./ContratoTexto";
 import FirmaPad from "./FirmaPad";
 import SelectorHora from "./SelectorHora";
 import PantallaExito from "./PantallaExito";
+import { useVehiculosDisponibles, notaReserva, avisoNoDisponible } from "@/lib/useVehiculosDisponibles";
 
 function hoyISO() {
   const d = new Date();
@@ -14,8 +15,6 @@ function hoyISO() {
 }
 
 export default function FormularioRenta({ onExito }) {
-  const [motos, setMotos] = useState([]);
-  const [cargandoMotos, setCargandoMotos] = useState(true);
   const [tarifas, setTarifas] = useState(null);
   const [configExtras, setConfigExtras] = useState(null);
   const [listaStaff, setListaStaff] = useState([]);
@@ -44,6 +43,19 @@ export default function FormularioRenta({ onExito }) {
   const [acepto, setAcepto] = useState(false);
   const [firma, setFirma] = useState("");
   const fileRef = useRef(null);
+  const [avisoVehiculo, setAvisoVehiculo] = useState("");
+  // Motos libres en las fechas elegidas (una reserva futura no bloquea la
+  // moto antes de su fecha).
+  const { lista: motos, cargando: cargandoMotos } = useVehiculosDisponibles({
+    tipo: "moto",
+    fechaEntrega: form.fechaEntrega,
+    fechaPrevista: form.fechaPrevista,
+    seleccionadoId: form.motoId,
+    onPerdido: (m) => {
+      setForm((f) => ({ ...f, motoId: "" }));
+      setAvisoVehiculo(avisoNoDisponible(m ? `${form.idioma === "en" ? "Motorbike" : "La moto"} ${m.placa}` : "", form.idioma));
+    },
+  });
   const camaraRef = useRef(null);
 
   const t = TEXTOS_FORM[form.idioma === "en" ? "en" : "es"];
@@ -68,13 +80,6 @@ export default function FormularioRenta({ onExito }) {
   }
 
   useEffect(() => {
-    fetch("/api/motos?disponibles=1")
-      .then((r) => r.json())
-      .then((d) => {
-        setMotos(d.motos || []);
-        setCargandoMotos(false);
-      })
-      .catch(() => setCargandoMotos(false));
     fetch("/api/precios")
       .then((r) => r.json())
       .then((d) => setTarifas(d.tarifas))
@@ -312,14 +317,15 @@ export default function FormularioRenta({ onExito }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div className="field" style={{ gridColumn: "1 / -1" }}>
             <label>{t.moto}</label>
-            <select value={form.motoId} onChange={(e) => set("motoId", e.target.value)}>
+            <select value={form.motoId} onChange={(e) => { set("motoId", e.target.value); setAvisoVehiculo(""); }}>
               <option value="">{t.motoPlaceholder}</option>
               {motosLibres.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.placa} — {m.modelo} ({m.tipo === "scooter" ? "Scooter" : "Honda Navi"})
+                  {m.placa} — {m.modelo} ({m.tipo === "scooter" ? "Scooter" : "Honda Navi"}){notaReserva(m, form.idioma)}
                 </option>
               ))}
             </select>
+            {avisoVehiculo && <div style={{ fontSize: 13, color: "var(--danger)", marginTop: 6 }}>{avisoVehiculo}</div>}
           </div>
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>

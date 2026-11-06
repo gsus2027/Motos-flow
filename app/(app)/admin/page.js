@@ -45,6 +45,7 @@ function hoyISO() {
 }
 function estadoRenta(r) {
   if (r.estado === "devuelta") return "devuelta";
+  if (r.fecha_entrega > hoyISO()) return "reservada";
   const dif = diasEntre(hoyISO(), r.fecha_prevista);
   if (dif < 0) return "vencida";
   if (dif <= 1) return "por vencer";
@@ -60,7 +61,20 @@ const ESTILOS = {
   vencida: { bg: "#F6DEDA", fg: "#8E2A1C", dot: "#C0392B" },
   "por vencer": { bg: "#FBEACB", fg: "#8A5A03", dot: "#F0A202" },
   activa: { bg: "#DCEAE1", fg: "#245939", dot: "#3F7D58" },
+  reservada: { bg: "#E6F1FB", fg: "#0C447C", dot: "#378ADD" },
 };
+// Días que ocupa la renta (para buscar vehículos libres en esas fechas):
+// desde la entrega hasta la devolución, o hasta hoy si ya está vencida.
+function rangoRenta(r) {
+  const hoy = hoyISO();
+  let fin = r.fecha_prevista && r.fecha_prevista >= r.fecha_entrega ? r.fecha_prevista : r.fecha_entrega;
+  if (r.fecha_entrega <= hoy && fin < hoy) fin = hoy;
+  return `desde=${r.fecha_entrega}&hasta=${fin}`;
+}
+function faltanDias(iso) {
+  const d = diasEntre(hoyISO(), iso);
+  return d === 1 ? "empieza mañana" : `empieza en ${d} días`;
+}
 function Badge({ estado }) {
   const s = ESTILOS[estado] || ESTILOS.activa;
   return (
@@ -185,7 +199,7 @@ export default function Panel() {
   // moto entregada no arranca). Solo aplica a rentas de moto, no ebike.
   async function abrirCambioMoto(r) {
     setCambiandoMoto({ renta: r, motosDisponibles: null, elegida: "", error: "", guardando: false });
-    const res = await fetch("/api/motos?disponibles=1").then((x) => x.json());
+    const res = await fetch(`/api/motos?disponibles=1&${rangoRenta(r)}`).then((x) => x.json());
     setCambiandoMoto((c) => (c && c.renta.id === r.id ? { ...c, motosDisponibles: res.motos || [] } : c));
   }
 
@@ -208,7 +222,7 @@ export default function Panel() {
   // ---- Agregar otra moto / e-bike al mismo contrato (18-oct-2026) ----
   async function abrirAgregar(r) {
     setAgregando({ renta: r, disponibles: null, elegida: "", precio: null, calculando: false, error: "", guardando: false });
-    const url = r._tipo === "ebike" ? "/api/ebikes?disponibles=1" : "/api/motos?disponibles=1";
+    const url = `${r._tipo === "ebike" ? "/api/ebikes" : "/api/motos"}?disponibles=1&${rangoRenta(r)}`;
     const res = await fetch(url).then((x) => x.json()).catch(() => ({}));
     const lista = (r._tipo === "ebike" ? res.ebikes : res.motos) || [];
     setAgregando((c) => (c && c.renta.id === r.id ? { ...c, disponibles: lista } : c));
@@ -349,9 +363,20 @@ export default function Panel() {
             {r.agregado_por && <div style={{ fontSize: 12, color: "var(--text-muted)" }}>agregada por {r.agregado_por}</div>}
           </div>
           <div className="renta-devuelve">
-            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devuelve</div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
-            <Badge estado={estadoRenta(r)} />
+            {estadoRenta(r) === "reservada" ? (
+              <>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Reserva</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{formatoDia(r.fecha_entrega)} → {formatoDia(r.fecha_prevista)}</div>
+                <Badge estado="reservada" />
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3 }}>{faltanDias(r.fecha_entrega)}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Devuelve</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{formatoDia(r.fecha_prevista)}</div>
+                <Badge estado={estadoRenta(r)} />
+              </>
+            )}
           </div>
         </div>
         <div className="renta-acciones">
@@ -388,11 +413,64 @@ export default function Panel() {
 
   if (cargando) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
-  const rentasActivas = rentas.filter((r) => r.estado !== "devuelta").sort((a, b) => a.fecha_prevista.localeCompare(b.fecha_prevista));
+  // 5-nov-2026: una reserva para otra fecha ya no cuenta como "rentada":
+  // sale aparte en "Próximas reservas" y no bloquea el vehículo antes de
+  // su fecha. El día que empieza pasa sola a "Rentas en curso".
+  const hoy = hoyISO();
+  const rentasActivas = rentas.filter((r) => r.estado !== "devuelta");
+  const enCurso = rentasActivas.filter((r) => r.fecha_entrega <= hoy).sort((a, b) => a.fecha_prevista.localeCompare(b.fecha_prevista));
+  const proximas = rentasActivas.filter((r) => r.fecha_entrega > hoy).sort((a, b) => a.fecha_entrega.localeCompare(b.fecha_entrega));
   const totalVehiculos = motos.length + ebikes.length;
-  const disponibles = totalVehiculos - rentasActivas.length;
-  const vencidas = rentasActivas.filter((r) => estadoRenta(r) === "vencida").length;
+  const ocupadosHoy = new Set(enCurso.map((r) => `${r._tipo}-${r._tipo === "ebike" ? r.ebike_id : r.moto_id}`)).size;
+  const disponibles = totalVehiculos - ocupadosHoy;
+  const vencidas = enCurso.filter((r) => estadoRenta(r) === "vencida").length;
   const porCobrar = Math.round(rentasActivas.reduce((s, r) => s + cobroDe(r).pendiente, 0) * 100) / 100;
+
+  function listaRentas(lista) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {agruparPorContrato(lista).map((grupo) => {
+          if (grupo.length === 1) return tarjetaRenta(grupo[0]);
+          const r0 = grupo[0];
+          const total = grupo.reduce((n, x) => n + Number(x.tarifa_total || 0), 0);
+          const pendiente = Math.round(grupo.reduce((n, x) => n + cobroDe(x).pendiente, 0) * 100) / 100;
+          const pagado = Math.round(grupo.reduce((n, x) => n + cobroDe(x).pagado, 0) * 100) / 100;
+          const nombreTipo = r0._tipo === "ebike" ? "e-bikes" : "motos";
+          return (
+            <div key={`grupo-${r0._tipo}-${r0.id}`} style={{ border: "1.5px solid var(--highlight-border)", background: "#F7FBFF", borderRadius: 20, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "2px 6px 4px" }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 15 }}>
+                    {r0.cliente} · <span style={{ color: "var(--highlight-text)" }}>contrato con {grupo.length} {nombreTipo}</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+                    {r0.cedula} · Total del contrato <strong style={{ color: "var(--text)" }}>{dinero(total)}</strong>
+                  </div>
+                  {!cobroDe(r0).sinDatos && (
+                    <EstadoCobro cobro={{ pagado, pendiente, cobros: grupo.flatMap((x) => cobroDe(x).cobros), sinDatos: false }} />
+                  )}
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  {pendiente > 0 && (
+                    <button className="btn-primary" style={{ padding: "10px 20px", fontSize: 15 }} onClick={() => setCobrando({ renta: r0, grupo, pendiente, luegoDevolver: false })}>
+                      Cobrar {dinero(pendiente)}
+                    </button>
+                  )}
+                  <button className="btn-secondary" onClick={() => setContratoVisible(r0)}>
+                    Contrato ({r0.idioma === "en" ? "EN" : "ES"})
+                  </button>
+                  <button className="btn-secondary" style={{ borderColor: "var(--amber)", color: "var(--amber)", fontWeight: 600, whiteSpace: "nowrap" }} onClick={() => abrirAgregar(r0)}>
+                    ➕ Otra {r0._tipo === "ebike" ? "e-bike" : "moto"}
+                  </button>
+                </div>
+              </div>
+              {grupo.map((x) => tarjetaRenta(x, { enGrupo: true }))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -402,59 +480,30 @@ export default function Panel() {
 
       <div style={{ display: "flex", gap: 14, marginBottom: 30, flexWrap: "wrap" }}>
         <Stat label="Vehículos en flota" value={totalVehiculos} />
-        <Stat label="Disponibles" value={Math.max(disponibles, 0)} color="#3F7D58" />
-        <Stat label="Rentados" value={rentasActivas.length} color="#8A5A03" />
+        <Stat label="Disponibles hoy" value={Math.max(disponibles, 0)} color="#3F7D58" />
+        <Stat label="Rentados" value={enCurso.length} color="#8A5A03" />
+        {proximas.length > 0 && <Stat label="Reservas próximas" value={proximas.length} color="#185FA5" />}
         <Stat label="Vencidos" value={vencidas} color="#C0392B" />
         <Stat label="Por cobrar" value={dinero(porCobrar)} color={porCobrar > 0 ? "#8A6100" : undefined} />
       </div>
 
       <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "0 0 12px" }}>Rentas en curso</h2>
-      {rentasActivas.length === 0 ? (
+      {enCurso.length === 0 ? (
         <div className="card" style={{ padding: 24, color: "var(--text-muted)", fontSize: 14.5 }}>
           No hay vehículos rentados en este momento. Ve a "Nueva renta" para registrar una.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {agruparPorContrato(rentasActivas).map((grupo) => {
-            if (grupo.length === 1) return tarjetaRenta(grupo[0]);
-            const r0 = grupo[0];
-            const total = grupo.reduce((n, x) => n + Number(x.tarifa_total || 0), 0);
-            const pendiente = Math.round(grupo.reduce((n, x) => n + cobroDe(x).pendiente, 0) * 100) / 100;
-            const pagado = Math.round(grupo.reduce((n, x) => n + cobroDe(x).pagado, 0) * 100) / 100;
-            const nombreTipo = r0._tipo === "ebike" ? "e-bikes" : "motos";
-            return (
-              <div key={`grupo-${r0._tipo}-${r0.id}`} style={{ border: "1.5px solid var(--highlight-border)", background: "#F7FBFF", borderRadius: 20, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "2px 6px 4px" }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 15 }}>
-                      {r0.cliente} · <span style={{ color: "var(--highlight-text)" }}>contrato con {grupo.length} {nombreTipo}</span>
-                    </div>
-                    <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
-                      {r0.cedula} · Total del contrato <strong style={{ color: "var(--text)" }}>{dinero(total)}</strong>
-                    </div>
-                    {!cobroDe(r0).sinDatos && (
-                      <EstadoCobro cobro={{ pagado, pendiente, cobros: grupo.flatMap((x) => cobroDe(x).cobros), sinDatos: false }} />
-                    )}
-                  </div>
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    {pendiente > 0 && (
-                      <button className="btn-primary" style={{ padding: "10px 20px", fontSize: 15 }} onClick={() => setCobrando({ renta: r0, grupo, pendiente, luegoDevolver: false })}>
-                        Cobrar {dinero(pendiente)}
-                      </button>
-                    )}
-                    <button className="btn-secondary" onClick={() => setContratoVisible(r0)}>
-                      Contrato ({r0.idioma === "en" ? "EN" : "ES"})
-                    </button>
-                    <button className="btn-secondary" style={{ borderColor: "var(--amber)", color: "var(--amber)", fontWeight: 600, whiteSpace: "nowrap" }} onClick={() => abrirAgregar(r0)}>
-                      ➕ Otra {r0._tipo === "ebike" ? "e-bike" : "moto"}
-                    </button>
-                  </div>
-                </div>
-                {grupo.map((x) => tarjetaRenta(x, { enGrupo: true }))}
-              </div>
-            );
-          })}
-        </div>
+        listaRentas(enCurso)
+      )}
+
+      {proximas.length > 0 && (
+        <>
+          <h2 style={{ fontFamily: "var(--font-heading)", fontWeight: 600, fontSize: 17, margin: "28px 0 4px" }}>Próximas reservas</h2>
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 12px" }}>
+            El vehículo se puede rentar hasta el día antes de cada reserva. El día que empieza pasa solo a &quot;Rentas en curso&quot;.
+          </p>
+          {listaRentas(proximas)}
+        </>
       )}
 
       {contratoVisible && contratoVisible._tipo === "ebike" && (

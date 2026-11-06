@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelimit";
+import { filtrarDisponibles, rangoDePedido } from "@/lib/disponibilidad";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +34,11 @@ export async function GET(req) {
   const soloDisponibles = new URL(req.url).searchParams.get("disponibles") === "1";
   if (!soloDisponibles) return NextResponse.json({ ebikes: data });
 
-  const { data: activas } = await db.from("rentas_ebike").select("ebike_id").eq("estado", "activa");
-  const ocupadas = new Set((activas || []).map((r) => r.ebike_id));
-  return NextResponse.json({ ebikes: data.filter((e) => !ocupadas.has(e.id)) });
+  // Disponibles en las fechas pedidas (ver /api/motos).
+  const { desde, hasta, hoy } = rangoDePedido(req);
+  const { data: activas, error: e2 } = await db.from("rentas_ebike").select("id, ebike_id, estado, fecha_entrega, fecha_prevista").eq("estado", "activa");
+  if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
+  return NextResponse.json({ ebikes: filtrarDisponibles({ vehiculos: data, rentas: activas, campo: "ebike_id", desde, hasta, hoy }) });
 }
 
 // POST: solo staff — agregar una ebike nueva

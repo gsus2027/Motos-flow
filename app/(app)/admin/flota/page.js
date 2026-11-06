@@ -24,7 +24,12 @@ function FlotaContenido() {
   }
   useEffect(() => { cargar(); }, []);
 
-  const idsOcupadas = new Set(rentas.filter((r) => r.estado !== "devuelta").map((r) => r.moto_id));
+  // Con renta activa (no se puede eliminar). "alquilada" solo si ya
+  // empezó; si es una reserva para otra fecha, sale como "reservada".
+  const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Panama" }).format(new Date());
+  const activas = rentas.filter((r) => r.estado !== "devuelta");
+  const idsOcupadas = new Set(activas.map((r) => r.moto_id));
+  const idsEnUso = new Set(activas.filter((r) => r.fecha_entrega <= hoy).map((r) => r.moto_id));
 
   async function agregar() {
     if (!placa.trim() || !modelo.trim()) return setError("Indica la placa y el modelo de la moto.");
@@ -94,8 +99,8 @@ function FlotaContenido() {
                   {m.tipo === "scooter" ? "Scooter" : "Honda Navi"}
                 </span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 12.5, color: ocupada ? "#8A5A03" : "#1E7A38", fontWeight: 600 }}>
-                    {ocupada ? "alquilada" : "disponible"}
+                  <span style={{ fontSize: 12.5, color: idsEnUso.has(m.id) ? "#8A5A03" : ocupada ? "#185FA5" : "#1E7A38", fontWeight: 600 }}>
+                    {idsEnUso.has(m.id) ? "alquilada" : ocupada ? "disponible · reservada" : "disponible"}
                   </span>
                   <button
                     className="btn-secondary btn-danger"

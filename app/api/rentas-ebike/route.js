@@ -6,6 +6,7 @@ import { limitadorEscritura, ipDelRequest, verificarLimite } from "@/lib/ratelim
 import { enviarCorreoContratoFirmado, enviarCorreoDevolucion, enviarContratoActualizado } from "@/lib/email";
 import { manejarAjusteRenta } from "@/lib/ajustesRenta";
 import { agregarVehiculoAContrato, rentasDelContrato } from "@/lib/contratoMultiple";
+import { buscarChoque, mensajeChoque, esFecha } from "@/lib/disponibilidad";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -58,14 +59,17 @@ export async function POST(req) {
 
   const db = supabaseServer();
 
-  const { data: activa } = await db
-    .from("rentas_ebike")
-    .select("id")
-    .eq("ebike_id", ebikeId)
-    .eq("estado", "activa")
-    .maybeSingle();
-  if (activa) {
-    return NextResponse.json({ error: "Esa ebike ya no está disponible, elige otra." }, { status: 409 });
+  // La ebike tiene que estar libre EN ESAS FECHAS (ver /api/rentas).
+  if (!esFecha(fechaEntrega) || !esFecha(fechaPrevista)) {
+    return NextResponse.json({ error: "Las fechas no son válidas." }, { status: 400 });
+  }
+  const hoy = fechaHoyPanama();
+  const choque = await buscarChoque({
+    db, tabla: "rentas_ebike", campo: "ebike_id", vehiculoId: ebikeId, hoy,
+    desde: fechaEntrega, hasta: fechaPrevista > fechaEntrega ? fechaPrevista : fechaEntrega,
+  });
+  if (choque) {
+    return NextResponse.json({ error: mensajeChoque(choque, hoy, { vehiculo: "Esa ebike", idioma: idioma === "en" ? "en" : "es" }) }, { status: 409 });
   }
 
   const { data: ebike } = await db.from("ebikes").select("numero").eq("id", ebikeId).maybeSingle();
