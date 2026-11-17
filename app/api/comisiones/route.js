@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { tokenValido, SESSION_COOKIE_NAME } from "@/lib/session";
 import { fechaHoyPanama } from "@/lib/pricing";
-import { calcularComisiones, aplicarPagos, normalizarConfig, primerDiaDelMes } from "@/lib/comisiones";
+import { calcularComisiones, aplicarPagos, normalizarConfig, primerDiaDelMes, agregarRegla, quitarUltimaRegla } from "@/lib/comisiones";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -48,7 +48,7 @@ async function leerConfig(db, hoy) {
     cfg.inicio = primerDiaDelMes(hoy);
     await db.from("configuracion").upsert({ clave: CLAVE, valor: JSON.stringify(cfg) }, { onConflict: "clave" });
   }
-  return cfg;
+  return { ...cfg, guardada };
 }
 
 // Rentas desde el inicio del sistema hasta hoy (motos + ebikes). Las que
@@ -60,7 +60,7 @@ async function rentasConComision(db, desde, hasta, staff) {
   const [motos, ebikes] = await Promise.all([
     todas(() =>
       db.from("rentas")
-        .select("id, fecha_entrega, tarifa_total, atendido_por_id, atendido_por, cliente, motos(placa, modelo)")
+        .select("id, fecha_entrega, tarifa_total, atendido_por_id, atendido_por, cliente, creado_en, motos(placa, modelo)")
         .is("comision_periodo_id", null)
         .gte("fecha_entrega", desde)
         .lte("fecha_entrega", hasta)
@@ -68,7 +68,7 @@ async function rentasConComision(db, desde, hasta, staff) {
     ),
     todas(() =>
       db.from("rentas_ebike")
-        .select("id, fecha_entrega, tarifa_total, atendido_por_id, atendido_por, cliente, ebikes(numero)")
+        .select("id, fecha_entrega, tarifa_total, atendido_por_id, atendido_por, cliente, creado_en, ebikes(numero)")
         .is("comision_periodo_id", null)
         .gte("fecha_entrega", desde)
         .lte("fecha_entrega", hasta)
@@ -80,12 +80,12 @@ async function rentasConComision(db, desde, hasta, staff) {
   return [
     ...motos.map((r) => ({
       id: r.id, tipo: "moto", fecha_entrega: r.fecha_entrega, tarifa_total: r.tarifa_total,
-      atendido_por_id: quien(r), cliente: r.cliente,
+      atendido_por_id: quien(r), cliente: r.cliente, creado_en: r.creado_en,
       vehiculo: r.motos ? `${r.motos.placa} — ${r.motos.modelo}` : "Moto",
     })),
     ...ebikes.map((r) => ({
       id: r.id, tipo: "ebike", fecha_entrega: r.fecha_entrega, tarifa_total: r.tarifa_total,
-      atendido_por_id: quien(r), cliente: r.cliente,
+      atendido_por_id: quien(r), cliente: r.cliente, creado_en: r.creado_en,
       vehiculo: r.ebikes ? `Ebike ${r.ebikes.numero}` : "Ebike",
     })),
   ];
@@ -161,7 +161,7 @@ export async function GET(req) {
     return NextResponse.json({
       ...respuesta,
       inicio: cfg.inicio,
-      configCompleta: cfg,
+      configCompleta: { tasa: cfg.tasa, metaDiaria: cfg.metaDiaria, bono: cfg.bono, inicio: cfg.inicio, historial: cfg.historial },
       equipo,
       staff: staff.map((s) => ({ id: s.id, nombre: s.nombre, activo: s.activo, comisiona: s.comisiona !== false })),
       pagos: (pagos || []).map((p) => ({ ...p, monto: Number(p.monto), nombre: nombre.get(p.staff_id) || "—" })),
@@ -188,7 +188,22 @@ export async function PATCH(req) {
     if (!Number.isFinite(tasa) || tasa < 0 || tasa > 100) return NextResponse.json({ error: "La tasa debe estar entre 0 y 100%." }, { status: 400 });
     if (!Number.isFinite(metaDiaria) || metaDiaria < 0) return NextResponse.json({ error: "Escribe una meta válida (0 = sin meta)." }, { status: 400 });
     if (!Number.isFinite(bono) || bono < 0) return NextResponse.json({ error: "Escribe un bono válido." }, { status: 400 });
-    const nuevo = { ...actual, tasa, metaDiaria, bono };
+    if (tasa === actual.tasa && metaDiaria === actual.metaDiaria && bono === actual.bono) {
+      return NextResponse.json({ error: "No cambiaste nada." }, { status: 400 });
+    }
+    // Aplica solo a las rentas que se registren desde ahora.
+    const nuevo = agregarRegla(actual.guardada, { tasa, metaDiaria, bono }, new Date().toISOString());
+    nuevo.inicio = actual.inicio;
+    const { error } = await db.from("configuracion").upsert({ clave: CLAVE, valor: JSON.stringify(nuevo) }, { onConflict: "clave" });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, config: nuevo });
+  }
+
+  if (body.accion === "deshacerRegla") {
+    const actual = await leerConfig(db, fechaHoyPanama());
+    const nuevo = quitarUltimaRegla(actual.guardada);
+    if (!nuevo) return NextResponse.json({ error: "No hay cambios de reglas para deshacer." }, { status: 400 });
+    nuevo.inicio = actual.inicio;
     const { error } = await db.from("configuracion").upsert({ clave: CLAVE, valor: JSON.stringify(nuevo) }, { onConflict: "clave" });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true, config: nuevo });
