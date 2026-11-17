@@ -7,6 +7,15 @@ function formatoDia(iso) {
   const [y, m, d] = String(iso).slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
 }
+function formatoHora(iso) {
+  if (!iso) return "—";
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone: "America/Panama", year: "numeric", month: "2-digit", day: "2-digit", hour: "numeric", minute: "2-digit", hour12: true })
+      .formatToParts(new Date(iso))
+      .map((x) => [x.type, x.value])
+  );
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute} ${String(p.dayPeriod).toLowerCase()}`;
+}
 function dinero(n) {
   return "$" + Number(n || 0).toFixed(2);
 }
@@ -51,8 +60,11 @@ function DetalleMiembro({ m, pagos }) {
           </div>
           {(d.rentas || []).map((r) => (
             <div key={`${r.tipo}-${r.id}`} style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "var(--text-muted)", padding: "2px 0", gap: 8 }}>
-              <span>{r.cliente} · {r.vehiculo}</span>
-              <span>{dinero(r.monto)}</span>
+              <span>
+                {r.cliente} · {r.vehiculo}
+                {r.tasa !== undefined && <span style={{ ...TAG, background: "#E6F1FB", color: "#0C447C" }}>{r.tasa}%</span>}
+              </span>
+              <span>{dinero(r.monto)}{r.comision !== undefined ? ` → ${dinero(r.comision)}` : ""}</span>
             </div>
           ))}
         </div>
@@ -303,6 +315,7 @@ function ComisionesContenido() {
   const [abierto, setAbierto] = useState(null);
   const [cfg, setCfg] = useState({ tasa: "", metaDiaria: "", bono: "" });
   const [cfgMsg, setCfgMsg] = useState("");
+  const [confirmarDeshacer, setConfirmarDeshacer] = useState(false);
   const [pago, setPago] = useState(null); // { miembro, monto, forma, nota, error, guardando }
 
   async function cargar() {
@@ -328,6 +341,15 @@ function ComisionesContenido() {
     const res = await enviar("PATCH", { accion: "config", tasa: Number(cfg.tasa), metaDiaria: Number(cfg.metaDiaria), bono: Number(cfg.bono) });
     if (res.error) return setCfgMsg(res.error);
     setCfgMsg("Guardado ✓");
+    cargar();
+  }
+
+  async function deshacerRegla() {
+    setConfirmarDeshacer(false);
+    setCfgMsg("");
+    const res = await enviar("PATCH", { accion: "deshacerRegla" });
+    if (res.error) return setCfgMsg(res.error);
+    setCfgMsg("Cambio deshecho ✓");
     cargar();
   }
 
@@ -360,6 +382,7 @@ function ComisionesContenido() {
   if (!datos) return <div style={{ color: "var(--text-muted)" }}>Cargando…</div>;
 
   const { equipo, staff, pagos, periodosAnteriores, inicio } = datos;
+  const historial = datos.configCompleta.historial || [];
 
   return (
     <div>
@@ -410,10 +433,36 @@ function ComisionesContenido() {
             </div>
           ))}
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 10 }}>
-            Al cambiar las reglas se recalcula lo ganado desde {formatoDia(inicio)}. Los pagos ya hechos no cambian, así que el saldo de cada miembro puede subir o bajar.
+            Aplica solo a las rentas que se registren desde que guardes. Las anteriores no cambian.
           </div>
           <button className="btn-secondary" onClick={guardarConfig}>Guardar reglas</button>
           {cfgMsg && <span style={{ marginLeft: 10, fontSize: 13, color: cfgMsg.includes("✓") ? "#245939" : "var(--danger)" }}>{cfgMsg}</span>}
+
+          <div style={{ borderTop: "1px solid var(--border)", marginTop: 16, paddingTop: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Historial de reglas</div>
+            {[...historial].reverse().map((r, i, lista) => {
+              const ini = r.desde ? formatoHora(r.desde) : formatoDia(inicio);
+              const cuando = i === 0 ? `Vigente desde ${ini}` : `${ini} – ${formatoHora(lista[i - 1].desde)}`;
+              return (
+                <div key={`${r.desde}-${i}`} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "5px 0", borderTop: i ? "1px solid var(--border)" : "none", color: i ? "var(--text-muted)" : "inherit" }}>
+                  <span>{cuando}</span>
+                  <span style={{ fontWeight: i ? 400 : 600, whiteSpace: "nowrap" }}>{r.tasa}% · meta ${r.metaDiaria} · bono ${r.bono}</span>
+                </div>
+              );
+            })}
+            {historial.length > 1 &&
+              (confirmarDeshacer ? (
+                <div style={{ marginTop: 8, fontSize: 13 }}>
+                  ¿Deshacer el último cambio? Las rentas registradas desde entonces vuelven a la regla anterior.{" "}
+                  <button className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px", marginRight: 4 }} onClick={deshacerRegla}>Sí, deshacer</button>
+                  <button className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px" }} onClick={() => setConfirmarDeshacer(false)}>No</button>
+                </div>
+              ) : (
+                <button className="btn-secondary" style={{ fontSize: 12.5, padding: "4px 10px", marginTop: 8 }} onClick={() => setConfirmarDeshacer(true)}>
+                  Deshacer el último cambio
+                </button>
+              ))}
+          </div>
         </div>
 
         <div className="card" style={{ padding: "16px 20px" }}>
