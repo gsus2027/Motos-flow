@@ -38,7 +38,10 @@ function tarifasValidas(t) {
 // para calcular el precio en tiempo real, antes de tener ninguna sesión.
 export async function GET() {
   const db = supabaseServer();
-  const { data } = await db.from("configuracion").select("valor").eq("clave", CLAVE).maybeSingle();
+  const { data, error } = await db.from("configuracion").select("valor").eq("clave", CLAVE).maybeSingle();
+  // Si la base de datos falla, error (el formulario reintenta) en vez de
+  // mostrarle al cliente precios por defecto que pueden no ser los tuyos.
+  if (error) return NextResponse.json({ error: "No se pudieron cargar los precios." }, { status: 503 });
   if (!data?.valor) {
     return NextResponse.json({ tarifas: tarifasPorDefecto() });
   }

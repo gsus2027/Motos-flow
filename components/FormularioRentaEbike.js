@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TEXTOS_FORM_EBIKE, TEXTOS_CONTRATO_EBIKE } from "@/lib/textos";
 import { calcularTarifaEbike, calcularExtras } from "@/lib/pricing";
 import ContratoTextoEbike from "./ContratoTextoEbike";
 import FirmaPad from "./FirmaPad";
 import PantallaExito from "./PantallaExito";
 import { useVehiculosDisponibles, notaReserva, avisoNoDisponible } from "@/lib/useVehiculosDisponibles";
+import { useCargaSegura, useBorrador } from "@/lib/cargaSegura";
+import AvisoCarga from "./AvisoCarga";
 
 function hoyISO() {
   const d = new Date();
@@ -13,9 +15,14 @@ function hoyISO() {
 }
 
 export default function FormularioRentaEbike({ onExito }) {
-  const [tarifas, setTarifas] = useState(null);
-  const [configExtras, setConfigExtras] = useState(null);
-  const [listaStaff, setListaStaff] = useState([]);
+  // Precios, extras y equipo con reintentos (antes, si fallaban, la lista
+  // quedaba vacía y había que recargar la página).
+  const cargaPrecios = useCargaSegura("/api/precios");
+  const cargaExtras = useCargaSegura("/api/extras");
+  const cargaEquipo = useCargaSegura("/api/auth");
+  const tarifas = cargaPrecios.datos?.tarifas || null;
+  const configExtras = cargaExtras.datos || null;
+  const listaStaff = cargaEquipo.datos?.staff || [];
   const [atendioClienteId, setAtendioClienteId] = useState("");
   const [extrasSeleccionados, setExtrasSeleccionados] = useState([]);
   const [paso, setPaso] = useState("datos");
@@ -39,7 +46,7 @@ export default function FormularioRentaEbike({ onExito }) {
   const [avisoVehiculo, setAvisoVehiculo] = useState("");
   // Ebikes libres en las fechas elegidas (una reserva futura no bloquea la
   // ebike antes de su fecha).
-  const { lista: ebikes, cargando: cargandoEbikes } = useVehiculosDisponibles({
+  const { lista: ebikes, cargando: cargandoEbikes, error: errorVehiculos, intento: intentoVehiculos, reintentar: reintentarVehiculos } = useVehiculosDisponibles({
     tipo: "ebike",
     fechaEntrega: form.fechaEntrega,
     fechaPrevista: form.fechaPrevista,
@@ -49,6 +56,18 @@ export default function FormularioRentaEbike({ onExito }) {
       setAvisoVehiculo(avisoNoDisponible(e ? `${form.idioma === "en" ? "E-bike" : "La ebike"} ${e.numero}` : "", form.idioma));
     },
   });
+
+  // Borrador en el teléfono del cliente: si recarga la página, no pierde
+  // lo escrito (la foto del carnet y la firma no se guardan).
+  const borrador = useBorrador(
+    "borrador-renta-ebike",
+    { form, atendioClienteId, extrasSeleccionados },
+    (d) => {
+      if (d.form) setForm((f) => ({ ...f, ...d.form }));
+      if (d.atendioClienteId) setAtendioClienteId(d.atendioClienteId);
+      if (Array.isArray(d.extrasSeleccionados)) setExtrasSeleccionados(d.extrasSeleccionados);
+    }
+  );
 
   const t = TEXTOS_FORM_EBIKE[form.idioma === "en" ? "en" : "es"];
   const tContrato = TEXTOS_CONTRATO_EBIKE[form.idioma === "en" ? "en" : "es"];
@@ -64,20 +83,6 @@ export default function FormularioRentaEbike({ onExito }) {
     setExtrasSeleccionados((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  useEffect(() => {
-    fetch("/api/precios")
-      .then((r) => r.json())
-      .then((d) => setTarifas(d.tarifas))
-      .catch(() => {});
-    fetch("/api/extras")
-      .then((r) => r.json())
-      .then((d) => setConfigExtras(d))
-      .catch(() => {});
-    fetch("/api/auth")
-      .then((r) => r.json())
-      .then((d) => setListaStaff(d.staff || []))
-      .catch(() => {});
-  }, []);
 
   function set(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -132,6 +137,7 @@ export default function FormularioRentaEbike({ onExito }) {
       }).then((r) => r.json());
       if (res.error) throw new Error(res.error);
 
+      borrador.borrar();
       onExito ? onExito() : setPaso("exito");
     } catch (err) {
       setError(err.message || "No se pudo completar la renta. Intenta de nuevo.");
@@ -179,6 +185,7 @@ export default function FormularioRentaEbike({ onExito }) {
                 <option key={s.id} value={s.id}>{s.nombre}</option>
               ))}
             </select>
+            <AvisoCarga cargando={cargaEquipo.cargando} error={cargaEquipo.error} intento={cargaEquipo.intento} onReintentar={cargaEquipo.reintentar} idioma={form.idioma} que={form.idioma === "en" ? "team list" : "equipo"} />
           </div>
         </div>
 
@@ -234,7 +241,24 @@ export default function FormularioRentaEbike({ onExito }) {
           </div>
         </div>
 
-        {!cargandoEbikes && ebikes.length === 0 && (
+        {borrador.recuperado && (
+          <div style={{ background: "#DCEAE1", color: "#245939", padding: "12px 14px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>
+            {form.idioma === "en" ? "We kept what you had filled in. Please sign again." : "Recuperamos lo que habías escrito. Solo falta volver a firmar."}
+            <div style={{ marginTop: 6 }}>
+              <button type="button" className="btn-secondary" style={{ fontSize: 13, padding: "4px 12px" }} onClick={() => { borrador.borrar(); window.location.reload(); }}>
+                {form.idioma === "en" ? "Start over" : "Empezar de nuevo"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(cargaPrecios.error || cargaExtras.error) && (
+          <div style={{ marginBottom: 16 }}>
+            <AvisoCarga error idioma={form.idioma} que={form.idioma === "en" ? "prices" : "precios"} onReintentar={() => { cargaPrecios.reintentar(); cargaExtras.reintentar(); }} />
+          </div>
+        )}
+
+        {!cargandoEbikes && !errorVehiculos && ebikes.length === 0 && (
           <div style={{ background: "var(--warning-bg)", color: "var(--warning-text)", padding: 14, borderRadius: 10, marginBottom: 20, fontSize: 14 }}>
             {t.faltanEbikes}
           </div>
@@ -280,6 +304,7 @@ export default function FormularioRentaEbike({ onExito }) {
               ))}
             </select>
             {avisoVehiculo && <div style={{ fontSize: 13, color: "var(--danger)", marginTop: 6 }}>{avisoVehiculo}</div>}
+            <AvisoCarga cargando={cargandoEbikes && ebikes.length === 0} error={errorVehiculos} intento={intentoVehiculos} onReintentar={reintentarVehiculos} idioma={form.idioma} que={form.idioma === "en" ? "e-bikes" : "ebikes"} />
           </div>
 
           {configExtras?.extras?.length > 0 && (
