@@ -13,7 +13,10 @@ export const dynamic = "force-dynamic";
 // sesión"), y quién es el usuario actual si ya hay una sesión válida.
 export async function GET(req) {
   const db = supabaseServer();
-  const { data: activos } = await db.from("staff").select("id, nombre").eq("activo", true).order("nombre");
+  const { data: activos, error } = await db.from("staff").select("id, nombre").eq("activo", true).order("nombre");
+  // Si la base de datos falla, se avisa con un error (antes devolvía una
+  // lista vacía y el formulario del cliente quedaba sin "quién te atendió").
+  if (error) return NextResponse.json({ error: "No se pudo cargar el equipo." }, { status: 503 });
 
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   const sesion = await tokenValido(token);

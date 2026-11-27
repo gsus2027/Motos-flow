@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { TEXTOS_FORM, TEXTOS_CONTRATO } from "@/lib/textos";
 import { calcularTarifa, calcularExtras } from "@/lib/pricing";
 import { comprimirImagen } from "@/lib/imagen";
@@ -8,6 +8,8 @@ import FirmaPad from "./FirmaPad";
 import SelectorHora from "./SelectorHora";
 import PantallaExito from "./PantallaExito";
 import { useVehiculosDisponibles, notaReserva, avisoNoDisponible } from "@/lib/useVehiculosDisponibles";
+import { useCargaSegura, useBorrador } from "@/lib/cargaSegura";
+import AvisoCarga from "./AvisoCarga";
 
 function hoyISO() {
   const d = new Date();
@@ -15,9 +17,14 @@ function hoyISO() {
 }
 
 export default function FormularioRenta({ onExito }) {
-  const [tarifas, setTarifas] = useState(null);
-  const [configExtras, setConfigExtras] = useState(null);
-  const [listaStaff, setListaStaff] = useState([]);
+  // Precios, extras y equipo con reintentos (antes, si fallaban, la lista
+  // quedaba vacía y había que recargar la página).
+  const cargaPrecios = useCargaSegura("/api/precios");
+  const cargaExtras = useCargaSegura("/api/extras");
+  const cargaEquipo = useCargaSegura("/api/auth");
+  const tarifas = cargaPrecios.datos?.tarifas || null;
+  const configExtras = cargaExtras.datos || null;
+  const listaStaff = cargaEquipo.datos?.staff || [];
   const [atendioClienteId, setAtendioClienteId] = useState("");
   const [cobertura, setCobertura] = useState("basica");
   const [extrasSeleccionados, setExtrasSeleccionados] = useState([]);
@@ -46,7 +53,7 @@ export default function FormularioRenta({ onExito }) {
   const [avisoVehiculo, setAvisoVehiculo] = useState("");
   // Motos libres en las fechas elegidas (una reserva futura no bloquea la
   // moto antes de su fecha).
-  const { lista: motos, cargando: cargandoMotos } = useVehiculosDisponibles({
+  const { lista: motos, cargando: cargandoMotos, error: errorVehiculos, intento: intentoVehiculos, reintentar: reintentarVehiculos } = useVehiculosDisponibles({
     tipo: "moto",
     fechaEntrega: form.fechaEntrega,
     fechaPrevista: form.fechaPrevista,
@@ -57,6 +64,19 @@ export default function FormularioRenta({ onExito }) {
     },
   });
   const camaraRef = useRef(null);
+
+  // Borrador en el teléfono del cliente: si recarga la página, no pierde
+  // lo escrito (la foto del carnet y la firma no se guardan).
+  const borrador = useBorrador(
+    "borrador-renta-moto",
+    { form, atendioClienteId, extrasSeleccionados, cobertura },
+    (d) => {
+      if (d.form) setForm((f) => ({ ...f, ...d.form }));
+      if (d.atendioClienteId) setAtendioClienteId(d.atendioClienteId);
+      if (Array.isArray(d.extrasSeleccionados)) setExtrasSeleccionados(d.extrasSeleccionados);
+      if (d.cobertura === "premium" || d.cobertura === "basica") setCobertura(d.cobertura);
+    }
+  );
 
   const t = TEXTOS_FORM[form.idioma === "en" ? "en" : "es"];
   const tContrato = TEXTOS_CONTRATO[form.idioma === "en" ? "en" : "es"];
@@ -79,20 +99,6 @@ export default function FormularioRenta({ onExito }) {
     setExtrasSeleccionados((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  useEffect(() => {
-    fetch("/api/precios")
-      .then((r) => r.json())
-      .then((d) => setTarifas(d.tarifas))
-      .catch(() => {});
-    fetch("/api/extras")
-      .then((r) => r.json())
-      .then((d) => setConfigExtras(d))
-      .catch(() => {});
-    fetch("/api/auth")
-      .then((r) => r.json())
-      .then((d) => setListaStaff(d.staff || []))
-      .catch(() => {});
-  }, []);
 
   function set(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -174,6 +180,7 @@ export default function FormularioRenta({ onExito }) {
       }).then((r) => r.json());
       if (res.error) throw new Error(res.error);
 
+      borrador.borrar();
       onExito ? onExito() : setPaso("exito");
     } catch (err) {
       setError(err.message || "No se pudo completar la renta. Intenta de nuevo.");
@@ -223,6 +230,7 @@ export default function FormularioRenta({ onExito }) {
                 <option key={s.id} value={s.id}>{s.nombre}</option>
               ))}
             </select>
+            <AvisoCarga cargando={cargaEquipo.cargando} error={cargaEquipo.error} intento={cargaEquipo.intento} onReintentar={cargaEquipo.reintentar} idioma={form.idioma} que={form.idioma === "en" ? "team list" : "equipo"} />
           </div>
         </div>
 
@@ -278,7 +286,24 @@ export default function FormularioRenta({ onExito }) {
           </div>
         </div>
 
-        {!cargandoMotos && motosLibres.length === 0 && (
+        {borrador.recuperado && (
+          <div style={{ background: "#DCEAE1", color: "#245939", padding: "12px 14px", borderRadius: 10, marginBottom: 16, fontSize: 14 }}>
+            {form.idioma === "en" ? "We kept what you had filled in. Please take the ID photo and sign again." : "Recuperamos lo que habías escrito. Solo falta volver a tomar la foto del documento y firmar."}
+            <div style={{ marginTop: 6 }}>
+              <button type="button" className="btn-secondary" style={{ fontSize: 13, padding: "4px 12px" }} onClick={() => { borrador.borrar(); window.location.reload(); }}>
+                {form.idioma === "en" ? "Start over" : "Empezar de nuevo"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(cargaPrecios.error || cargaExtras.error) && (
+          <div style={{ marginBottom: 16 }}>
+            <AvisoCarga error idioma={form.idioma} que={form.idioma === "en" ? "prices" : "precios"} onReintentar={() => { cargaPrecios.reintentar(); cargaExtras.reintentar(); }} />
+          </div>
+        )}
+
+        {!cargandoMotos && !errorVehiculos && motosLibres.length === 0 && (
           <div style={{ background: "var(--warning-bg)", color: "var(--warning-text)", padding: 14, borderRadius: 10, marginBottom: 20, fontSize: 14 }}>
             {t.faltanMotos}
           </div>
@@ -326,6 +351,7 @@ export default function FormularioRenta({ onExito }) {
               ))}
             </select>
             {avisoVehiculo && <div style={{ fontSize: 13, color: "var(--danger)", marginTop: 6 }}>{avisoVehiculo}</div>}
+            <AvisoCarga cargando={cargandoMotos && motos.length === 0} error={errorVehiculos} intento={intentoVehiculos} onReintentar={reintentarVehiculos} idioma={form.idioma} que={form.idioma === "en" ? "motorcycles" : "motos"} />
           </div>
 
           <div className="field" style={{ gridColumn: "1 / -1" }}>
